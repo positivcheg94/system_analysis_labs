@@ -6,7 +6,9 @@ from scipy.optimize import minimize_scalar
 import numpy as np
 import matplotlib.pyplot as plt
 from openpyxl import Workbook
+
 from constants import *
+from polynom_representation import Representation
 
 
 # shit funcs
@@ -143,7 +145,7 @@ def __get_polynom_function__(poly_type):
         return special.eval_sh_legendre
     elif poly_type is LAGUERRE:
         return special.eval_laguerre
-    elif poly_type is HERMIT:
+    elif poly_type is HERMITE:
         return special.eval_hermite
     else:
         return special.eval_sh_chebyt
@@ -247,7 +249,7 @@ class Solver(object):
 
         self.p = np.array(degrees)
         self.weights = weights
-        self.polynom = __get_polynom_function__(poly_type)
+        self.polynom_type = __get_polynom_function__(poly_type)
         self.find_split_lambdas = find_split_lambdas
 
     def do_something(self):
@@ -258,7 +260,7 @@ class Solver(object):
         y_normed = self.normed_Y
         p = self.p
         B = __make_b_matrix__(y_normed, self.weights)
-        A = __make_a_matrix__(x_normed, p, self.polynom)
+        A = __make_a_matrix__(x_normed, p, self.polynom_type)
         lambdas = __make_lambdas__(A, B)
         psi_matrix = __make_psi__(A, x_normed, lambdas, p)
         a_small = __make_a_small_matrix__(y_normed, psi_matrix, dims_x_i)
@@ -275,7 +277,7 @@ class Solver(object):
         plt.plot(arg, real_y[1], 'b', arg, real_f[1], 'r')
         plt.show()
 
-        print_matrix_to_ws(self.ws, B, 'B matrix')
-        print_matrix_to_ws(self.ws, A, 'A matrix')
-        print_matrix_to_ws(self.ws, lambdas, 'Lambda matrix')
-        self.wb.save(NAME)
+        repr = Representation(self.polynom_type, p,c,f_i, a_small, psi_matrix,lambdas,self.x_scales,self.dims_x_i, self.y_scales)
+        repr.do_calculations()
+
+

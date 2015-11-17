@@ -5,13 +5,11 @@ from collections import defaultdict
 import tkinter as tk
 import tkinter.filedialog as file_dialog
 import tkinter.messagebox as message_box
-
 import pandas
-
 from solver import Solver
 
-
 CONST_LIMIT = 100
+
 
 def __validate_only_digits__(S):
     return S.isdigit()
@@ -40,7 +38,7 @@ def __parse_file__(file):
         elif i[0] is 'y':
             data_dict['y'][i] = tmp_dict[i][0]
 
-    if len(data_dict['x'])>3:
+    if len(data_dict['x']) > 3:
         print("sry, it's only experimental program, you can not have more than 3 x-variables")
         raise Exception
 
@@ -48,7 +46,6 @@ def __parse_file__(file):
 
 
 class Application:
-
     @staticmethod
     def __show_error__(title, message):
         message_box.showerror(title, message)
@@ -97,8 +94,9 @@ class Application:
 
         self._sample_size_frame = tk.Frame(self._sample_select_frame)
         self._sample_size_frame_label = tk.Label(self._sample_size_frame, text='Sample size')
-        self._sample_size_frame_entry = tk.Entry(self._sample_size_frame, validate='key', validatecommand=(self._validator, '%S'))
-        self._sample_size_frame_entry.insert(0,'50')
+        self._sample_size_frame_entry = tk.Entry(self._sample_size_frame, validate='key',
+                                                 validatecommand=(self._validator, '%S'))
+        self._sample_size_frame_entry.insert(0, '50')
         self._sample_size_frame_label.pack(side='left')
         self._sample_size_frame_entry.pack(side='right')
         self._sample_size_frame.pack()
@@ -193,7 +191,8 @@ class Application:
         tk.Label(self._spinbox1_frame, text='Degree of X1').pack(side='left')
         v = tk.IntVar()
         v.set(7)
-        self._degree_of_x1 = tk.Spinbox(self._spinbox1_frame, from_=1, to=CONST_LIMIT, textvariable=v, width=3, state='readonly')
+        self._degree_of_x1 = tk.Spinbox(self._spinbox1_frame, from_=1, to=CONST_LIMIT, textvariable=v, width=3,
+                                        state='readonly')
         self._degree_of_x1.pack(side='right')
         self._spinbox1_frame.pack(fill='x')
         #                #!spinbox 1 frame
@@ -202,7 +201,8 @@ class Application:
         tk.Label(self._spinbox2_frame, text='Degree of X2').pack(side='left')
         v = tk.IntVar()
         v.set(7)
-        self._degree_of_x2 = tk.Spinbox(self._spinbox2_frame, from_=1, to=CONST_LIMIT, textvariable=v, width=3, state='readonly')
+        self._degree_of_x2 = tk.Spinbox(self._spinbox2_frame, from_=1, to=CONST_LIMIT, textvariable=v, width=3,
+                                        state='readonly')
         self._degree_of_x2.pack(side='right')
         self._spinbox2_frame.pack(fill='x')
         #                #!spinbox 2 frame
@@ -211,7 +211,8 @@ class Application:
         tk.Label(self._spinbox3_frame, text='Degree of X3').pack(side='left')
         v = tk.IntVar()
         v.set(10)
-        self._degree_of_x3 = tk.Spinbox(self._spinbox3_frame, from_=1, to=CONST_LIMIT, textvariable=v, width=3, state='readonly')
+        self._degree_of_x3 = tk.Spinbox(self._spinbox3_frame, from_=1, to=CONST_LIMIT, textvariable=v, width=3,
+                                        state='readonly')
         self._degree_of_x3.pack(side='right')
         self._spinbox3_frame.pack(fill='x')
         #                #!spinbox 3 frame
@@ -248,7 +249,7 @@ class Application:
         #            #!plot frame
         """
         self._additional_frame.pack(fill='x')
-        #self._plot_frame.pack(fill='x')
+        # self._plot_frame.pack(fill='x')
         #        #!global additional frame
         self._global_additional_frame.pack(side='left', fill='x')
 
@@ -259,7 +260,7 @@ class Application:
 
         #        #left button
         self._middle_frame_button_left = tk.Frame(self._middle_block)
-        self._plot_button = tk.Button(self._middle_frame_button_left, command = self._make_plot, text='Make plots')
+        self._plot_button = tk.Button(self._middle_frame_button_left, command=self._make_plot, text='Make plots')
         self._plot_button.pack()
         #        #right button
         self._middle_frame_button_right = tk.Frame(self._middle_block)
@@ -338,23 +339,20 @@ class Application:
         elif p == 3:
             polynom = 'laguerre'
         else:
-            polynom = 'hermit'
+            polynom = 'hermite'
         degree_x1 = int(self._degree_of_x1.get())
         degree_x2 = int(self._degree_of_x2.get())
         degree_x3 = int(self._degree_of_x3.get())
-        degrees = [degree_x1,degree_x2,degree_x3]
+        degrees = [degree_x1, degree_x2, degree_x3]
 
-        weights = 'minmax'
         if self._weights.get() == 1:
             weights = 'average'
         else:
             weights = 'minmax'
         find_lambda = bool(self._find_lambdas.get())
 
-        s = Solver(self._data,samples,degrees,weights,polynom,find_lambda)
+        s = Solver(self._data, samples, degrees, weights, polynom, find_lambda)
         s.do_something()
-
-
 
     def _make_plot(self):
         if self._last_result is not None:
@@ -368,8 +366,8 @@ class Application:
 
     def reset_and_insert_results(self, results):
         self._result_window.config(state='normal')
-        self._result_window.delete(1.0,'end')
-        self._result_window.insert(1.0,results)
+        self._result_window.delete(1.0, 'end')
+        self._result_window.insert(1.0, results)
         self._result_window.config(state='disabled')
 
     def execute(self):
