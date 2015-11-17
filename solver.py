@@ -6,18 +6,7 @@ from scipy.optimize import minimize_scalar
 import numpy as np
 import matplotlib.pyplot as plt
 from openpyxl import Workbook
-
-CONST_EPS = 1e-6
-CHEBYSHEV = 'chebyshev'
-LEGENDRE = 'legendre'
-LAGUERRE = 'laguerre'
-HERMIT = 'hermit'
-
-NAME = 'temp.xlsx'
-
-DEFAULT_METHOD = 'lsq'
-
-turn_tricks_off = True
+from constants import *
 
 
 # shit funcs
@@ -51,9 +40,6 @@ def __coord_descent__(a_matrix, b_vector, eps):
             res = minimize_scalar(f_scalar(x, i), method="Golden")
             x[i] = res.x
         error = np.linalg.norm(x - x_)
-        print('Iteration -', iteration)
-        print('x =', x)
-        print('f(x) =', f(x))
         iteration += 1
     return x
 
@@ -103,6 +89,7 @@ def __minimize_equation__(a_matrix, b_vector, method=DEFAULT_METHOD):
         return np.linalg.lstsq(a_matrix, b_vector)[0]
 
 
+
 def __tricky_minimize__(a_matrix, b, trick=False, method=DEFAULT_METHOD):
     if trick:
         a_transpose = a_matrix.T
@@ -113,8 +100,32 @@ def __tricky_minimize__(a_matrix, b, trick=False, method=DEFAULT_METHOD):
 def __normalize_vector__(v):
     v_min, v_max = np.min(v), np.max(v)
     l = v_max - v_min
+    scales = np.array([-v_min, l])
     normed_v = (v - v_min) / l
-    return normed_v
+    return normed_v, scales
+
+
+def __normalize_x_matrix__(x_matrix):
+    x_normed, x_scales = [], []
+    for x_i in x_matrix:
+        x_i_normed = []
+        scales_x_i = []
+        for x_i_j in x_i:
+            current_normed_vector, current_scales = __normalize_vector__(x_i_j)
+            x_i_normed.append(current_normed_vector)
+            scales_x_i.append(current_scales)
+        x_normed.append(np.vstack(x_i_normed))
+        x_scales.append(np.vstack(scales_x_i))
+    return np.array(x_normed), np.array(x_scales)
+
+
+def __normalize_y_matrix__(y_matrix):
+    y_normed, y_scales = [], []
+    for y_i in y_matrix:
+        current_normed_vector, current_scales = __normalize_vector__(y_i)
+        y_normed.append(current_normed_vector)
+        y_scales.append(current_scales)
+    return np.vstack(y_normed), np.vstack(y_scales).astype(np.float64)
 
 
 def __make_b_matrix__(y_matrix, weights):
@@ -225,12 +236,14 @@ class Solver(object):
         self.x = deepcopy(self.data['x'])
         self.y = deepcopy(self.data['y'])
 
+        self.dims_x_i = np.array([len(self.x[i]) for i in sorted(self.x)])
+
         self.X = np.array([self.x[i] for i in sorted(self.x)])
         self.Y = np.array([self.y[i] for i in sorted(self.y)])
 
         # norm data
-        self.normed_X = np.array([[__normalize_vector__(j) for j in i] for i in self.X])
-        self.normed_Y = np.array([__normalize_vector__(i) for i in self.Y])
+        self.normed_X, self.x_scales = __normalize_x_matrix__(self.X)
+        self.normed_Y, self.y_scales = __normalize_y_matrix__(self.Y)
 
         self.p = np.array(degrees)
         self.weights = weights
@@ -241,11 +254,11 @@ class Solver(object):
         n = len(self.normed_X[0][0])
         real_y = self.Y
         x_normed = self.normed_X
-        dims_x_i = [len(i) for i in x_normed]
+        dims_x_i = self.dims_x_i
         y_normed = self.normed_Y
         p = self.p
         B = __make_b_matrix__(y_normed, self.weights)
-        A = __make_a_matrix__(x_normed, self.p, self.polynom)
+        A = __make_a_matrix__(x_normed, p, self.polynom)
         lambdas = __make_lambdas__(A, B)
         psi_matrix = __make_psi__(A, x_normed, lambdas, p)
         a_small = __make_a_small_matrix__(y_normed, psi_matrix, dims_x_i)
