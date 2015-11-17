@@ -260,8 +260,11 @@ class Application:
         self._middle_block.pack(fill='x')
 
         self._result_frame = tk.Frame(self._bottom_block)
-        self._result_window = tk.Text(self._result_frame, state='disabled')
+        self._result_window_scrollbar = tk.Scrollbar(self._result_frame)
+        self._result_window_scrollbar.pack(side='right',fill='y')
+        self._result_window = tk.Text(self._result_frame, state='disabled', yscrollcommand=self._result_window_scrollbar.set)
         self._result_window.pack(fill='both')
+        self._result_window_scrollbar.config(command=self._result_window.yview)
         self._result_frame.pack(fill='x')
         self._bottom_block.pack(fill='x')
 
@@ -341,6 +344,7 @@ class Application:
         s = Solver(self._data, samples, degrees, weights, polynom, find_lambda)
         results = s.do_something()
         self.reset_and_insert_results(results)
+        self.__write_to_file__(results)
 
     def _make_plot(self):
         if self._last_result is not None:
@@ -357,6 +361,9 @@ class Application:
         self._result_window.delete(1.0, 'end')
         self._result_window.insert(1.0, results)
         self._result_window.config(state='disabled')
+
+    def __write_to_file__(self,data):
+        open(self._result_file_name,'w').write(data)
 
     def execute(self):
         self._main_window.mainloop()

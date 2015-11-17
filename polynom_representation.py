@@ -101,7 +101,7 @@ def __psi_representation__(psi, dims_x_i, symbol):
                                                                                                       x_i + 1, t + 1,
                                                                                                       symbol))
             last = k
-        return '\n'.join(psi_repr)
+        return '\n\n'.join(psi_repr)
 
 
 def __f_i_representation__(f_i_polynom, symbol):
@@ -113,7 +113,7 @@ def __f_i_representation__(f_i_polynom, symbol):
             for x_i_j in range(len(f[i][x_i])):
                 f_i_j_repr.append(__convert_special_polynom_to_string__(f[i][x_i][x_i_j], x_i + 1, x_i_j + 1, symbol))
             f_i_repr.append('Fi-{:d},{:d} = '.format(x_i + 1, i + 1) + ' + '.join(f_i_j_repr))
-    return '\n'.join(f_i_repr)
+    return '\n\n'.join(f_i_repr)
 
 
 def __f_representation__(f_polynom, symbol):
@@ -125,7 +125,7 @@ def __f_representation__(f_polynom, symbol):
             for x_i_j in range(len(f[i][x_i])):
                 f_i_repr.append(__convert_special_polynom_to_string__(f[i][x_i][x_i_j], x_i + 1, x_i_j + 1, symbol))
         f_repr.append('F-{:d} = '.format(i + 1) + ' + '.join(f_i_repr))
-    return '\n'.join(f_repr)
+    return '\n\n'.join(f_repr)
 
 
 def __f_general_polynom_representation__(f_real):
@@ -137,7 +137,7 @@ def __f_general_polynom_representation__(f_real):
             for x_i_j in range(len(f[i][x_i])):
                 f_i_repr.append(__convert_polynom_to_string__(f[i][x_i][x_i_j], x_i + 1, x_i_j + 1))
         f_repr.append('F-{:d} = '.format(i + 1) + ' + '.join(f_i_repr))
-    return '\n'.join(f_repr)
+    return '\n\n'.join(f_repr)
 
 
 class Representation(object):
@@ -178,6 +178,6 @@ class Representation(object):
         f_representation = __f_representation__(f_polynoms, self.polynom_symbol)
         f_real_representation = __f_general_polynom_representation__(f_real)
         unshifted_f_representation = __f_general_polynom_representation__(unshifted_f)
-        return '\n\n'.join(
+        return '\n\n\n\n'.join(
             [psi_representation, f_i_representation, f_representation, 'General form\n' + f_real_representation,
-             'Unshifted form' + unshifted_f_representation])
+             'Unshifted form\n' + unshifted_f_representation])

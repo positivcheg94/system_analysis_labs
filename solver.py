@@ -87,7 +87,7 @@ def __minimize_equation__(a_matrix, b_vector, method=DEFAULT_METHOD):
     elif method is 'jacobi':
         return __gauss_seidel__(a_matrix, b_vector, CONST_EPS)
     else:
-        return scipy.linalg.lstsq(a_matrix, b_vector)[0]
+        return scipy.linalg.lstsq(a_matrix, b_vector, CONST_EPS)[0]
 
 
 def __tricky_minimize__(a_matrix, b, trick=False, method=DEFAULT_METHOD):
