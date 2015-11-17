@@ -236,20 +236,7 @@ class Application:
                                                         variable=self._find_lambdas)
         self._find_lambdas_checkbutton.pack(fill='x')
         #            #additional frame
-        """
-        #            #plot frame
-        self._plot_frame = tk.Frame(self._global_additional_frame, relief='groove', borderwidth=2)
-        tk.Label(self._plot_frame, text='Plot').pack(fill='x')
-        #                #plot chose frame
-        self._plot_choose_frame = tk.Frame(self._plot_frame)
-        tk.Radiobutton(self._plot_frame, text='Plot by sample', variable=self._plot_mode, value=1).pack(fill='x')
-        tk.Radiobutton(self._plot_frame, text='Plot by coords', variable=self._plot_mode, value=2).pack(fill='x')
-        #                #!plot chose frame
-        self._plot_choose_frame.pack(fill='x')
-        #            #!plot frame
-        """
         self._additional_frame.pack(fill='x')
-        # self._plot_frame.pack(fill='x')
         #        #!global additional frame
         self._global_additional_frame.pack(side='left', fill='x')
 
@@ -352,7 +339,8 @@ class Application:
         find_lambda = bool(self._find_lambdas.get())
 
         s = Solver(self._data, samples, degrees, weights, polynom, find_lambda)
-        s.do_something()
+        results = s.do_something()
+        self.reset_and_insert_results(results)
 
     def _make_plot(self):
         if self._last_result is not None:

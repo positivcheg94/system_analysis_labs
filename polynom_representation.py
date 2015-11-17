@@ -6,18 +6,19 @@ from numpy.polynomial import Polynomial, Chebyshev, Legendre, Laguerre, Hermite
 from constants import *
 
 DOM = np.array([0, 1])
-POLYNOM_MASK = '{:e} {:s}{:d},{:d}^{:d}'
-SPECIAL_POLYNOM_MASK = '{:e} {:s}{:d}[x{:d},{:d}]'
+POLYNOM_MASK = '{:e}*{:s}[{:d},{:d}]^{:d}'
+SPECIAL_POLYNOM_MASK = '{:e}*{:s}{:d}[x{:d},{:d}]'
 
 
-def __convert_polynom_to_string__(polynom, first, second, symbol='X'):
+def __convert_polynom_to_string__(polynom, first, second, symbol='x'):
     coef = polynom.coef
-    return ' + '.join([POLYNOM_MASK.format(coef[i], symbol,first, second, i) for i in reversed(range(len(coef)))])
+    return ' + '.join([POLYNOM_MASK.format(coef[i], symbol, first, second, i) for i in reversed(range(len(coef)))])
 
 
-def __convert_special_polynom_to_string__(polynom,first,second, symbol='C'):
+def __convert_special_polynom_to_string__(polynom, first, second, symbol='C'):
     coef = polynom.coef
-    return ' + '.join([SPECIAL_POLYNOM_MASK.format(coef[i], symbol, i, first, second) for i in reversed(range(len(coef)))])
+    return ' + '.join(
+        [SPECIAL_POLYNOM_MASK.format(coef[i], symbol, i, first, second) for i in reversed(range(len(coef)))])
 
 
 def __make_psi_polynom__(lambdas, polynom, dims_x_i, p):
@@ -92,23 +93,51 @@ def __unshifted_f_polynoms__(f_real_polynoms, x_scales):
 def __psi_representation__(psi, dims_x_i, symbol):
     psi_repr = []
     for i in range(len(psi)):
-        psi_i_repr = []
         last = 0
-        for x_i,k in zip(range(len(dims_x_i)), list(accumulate(dims_x_i))):
-            for t in range(k-last):
-                psi_repr.append('PSI-{:d},{:d} = '.format(x_i+1,t+1)+__convert_special_polynom_to_string__(psi[i][last+t],x_i+1,t+1,symbol))
+        for x_i, k in zip(range(len(dims_x_i)), list(accumulate(dims_x_i))):
+            for t in range(k - last):
+                psi_repr.append(
+                    'PSI-{:d},{:d} = '.format(x_i + 1, t + 1) + __convert_special_polynom_to_string__(psi[i][last + t],
+                                                                                                      x_i + 1, t + 1,
+                                                                                                      symbol))
             last = k
         return '\n'.join(psi_repr)
 
 
-def __f_i_representation__(f_i_polynom):
+def __f_i_representation__(f_i_polynom, symbol):
     f_i_repr = []
-    f_i = f_i_polynom
-    for i in range(len(f_i)):
-        for x_i in range(len(f_i[i])):
-            for x_i_j in range(len(f_i[i][x_i_j])):
-                f_i_repr.append(f_i[i][x_i][x_i_j])
+    f = f_i_polynom
+    for i in range(len(f)):
+        for x_i in range(len(f[i])):
+            f_i_j_repr = []
+            for x_i_j in range(len(f[i][x_i])):
+                f_i_j_repr.append(__convert_special_polynom_to_string__(f[i][x_i][x_i_j], x_i + 1, x_i_j + 1, symbol))
+            f_i_repr.append('Fi-{:d},{:d} = '.format(x_i + 1, i + 1) + ' + '.join(f_i_j_repr))
+    return '\n'.join(f_i_repr)
 
+
+def __f_representation__(f_polynom, symbol):
+    f_repr = []
+    f = f_polynom
+    for i in range(len(f)):
+        f_i_repr = []
+        for x_i in range(len(f[i])):
+            for x_i_j in range(len(f[i][x_i])):
+                f_i_repr.append(__convert_special_polynom_to_string__(f[i][x_i][x_i_j], x_i + 1, x_i_j + 1, symbol))
+        f_repr.append('F-{:d} = '.format(i + 1) + ' + '.join(f_i_repr))
+    return '\n'.join(f_repr)
+
+
+def __f_general_polynom_representation__(f_real):
+    f_repr = []
+    f = f_real
+    for i in range(len(f)):
+        f_i_repr = []
+        for x_i in range(len(f[i])):
+            for x_i_j in range(len(f[i][x_i])):
+                f_i_repr.append(__convert_polynom_to_string__(f[i][x_i][x_i_j], x_i + 1, x_i_j + 1))
+        f_repr.append('F-{:d} = '.format(i + 1) + ' + '.join(f_i_repr))
+    return '\n'.join(f_repr)
 
 
 class Representation(object):
@@ -144,5 +173,11 @@ class Representation(object):
         f_real = __transform_f_to_usual_polynomial_form__(f_polynoms)
         unshifted_f = __unshifted_f_polynoms__(f_real, self.x_scales)
 
-        psi_representation = __psi_representation__(psi_polynoms,dims_x_i,self.polynom_symbol)
-        print(psi_representation)
+        psi_representation = __psi_representation__(psi_polynoms, dims_x_i, self.polynom_symbol)
+        f_i_representation = __f_i_representation__(f_i_polynoms, self.polynom_symbol)
+        f_representation = __f_representation__(f_polynoms, self.polynom_symbol)
+        f_real_representation = __f_general_polynom_representation__(f_real)
+        unshifted_f_representation = __f_general_polynom_representation__(unshifted_f)
+        return '\n\n'.join(
+            [psi_representation, f_i_representation, f_representation, 'General form\n' + f_real_representation,
+             'Unshifted form' + unshifted_f_representation])

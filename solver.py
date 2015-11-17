@@ -7,7 +7,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from openpyxl import Workbook
 import scipy
-
 from constants import *
 from polynom_representation import Representation
 
@@ -276,6 +275,14 @@ class Solver(object):
         plt.plot(arg, real_y[1], 'b', arg, real_f[1], 'r')
         plt.show()
 
-        representation = Representation(self.polynom_type, p, c, f_i, a_small, psi_matrix, lambdas, self.x_scales, self.dims_x_i,
-                              self.y_scales)
-        representation.do_calculations()
+        representation = Representation(self.polynom_type, p, c, f_i, a_small, psi_matrix, lambdas, self.x_scales,
+                                        self.dims_x_i, self.y_scales)
+        normed_error = np.linalg.norm(y_normed - f, np.inf, axis=1)
+        error = np.linalg.norm(real_y - real_f, np.inf, axis=1)
+        error = "normed Y errors - {:s}\nY errors - {:s}".format(str(normed_error),str(error))
+        result = representation.do_calculations()
+        return "\n\n".join([result, error])
+
+    def plot_graphs(self):
+        pass
+

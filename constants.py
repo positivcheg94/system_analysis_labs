@@ -1,4 +1,4 @@
-CONST_EPS = 1e-4
+CONST_EPS = 1e-5
 
 CHEBYSHEV = 'chebyshev'
 CHEBYSHEV_SYMBOL = 'T'
@@ -11,6 +11,6 @@ HERMITE_SYMBOL = 'H'
 
 NAME = 'temp.xlsx'
 
-DEFAULT_METHOD = 'lstsq'
+DEFAULT_METHOD = 'jacobi'
 
 turn_tricks_off = True
