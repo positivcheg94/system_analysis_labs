@@ -6,12 +6,12 @@ from scipy.optimize import minimize_scalar
 import numpy as np
 import matplotlib.pyplot as plt
 from openpyxl import Workbook
+import scipy
 
 from constants import *
 from polynom_representation import Representation
 
 
-# shit funcs
 def print_matrix_to_ws(ws, m, name):
     ws.append([name])
     for i in m:
@@ -88,8 +88,7 @@ def __minimize_equation__(a_matrix, b_vector, method=DEFAULT_METHOD):
     elif method is 'jacobi':
         return __gauss_seidel__(a_matrix, b_vector, CONST_EPS)
     else:
-        return np.linalg.lstsq(a_matrix, b_vector)[0]
-
+        return scipy.linalg.lstsq(a_matrix, b_vector)[0]
 
 
 def __tricky_minimize__(a_matrix, b, trick=False, method=DEFAULT_METHOD):
@@ -102,7 +101,7 @@ def __tricky_minimize__(a_matrix, b, trick=False, method=DEFAULT_METHOD):
 def __normalize_vector__(v):
     v_min, v_max = np.min(v), np.max(v)
     l = v_max - v_min
-    scales = np.array([-v_min, l])
+    scales = np.array([v_min, l])
     normed_v = (v - v_min) / l
     return normed_v, scales
 
@@ -277,7 +276,6 @@ class Solver(object):
         plt.plot(arg, real_y[1], 'b', arg, real_f[1], 'r')
         plt.show()
 
-        repr = Representation(self.polynom_type, p,c,f_i, a_small, psi_matrix,lambdas,self.x_scales,self.dims_x_i, self.y_scales)
-        repr.do_calculations()
-
-
+        representation = Representation(self.polynom_type, p, c, f_i, a_small, psi_matrix, lambdas, self.x_scales, self.dims_x_i,
+                              self.y_scales)
+        representation.do_calculations()

@@ -1,4 +1,5 @@
-CONST_EPS = 1e-5
+CONST_EPS = 1e-4
+
 CHEBYSHEV = 'chebyshev'
 CHEBYSHEV_SYMBOL = 'T'
 LEGENDRE = 'legendre'
