@@ -6,7 +6,10 @@ import tkinter as tk
 import tkinter.filedialog as file_dialog
 import tkinter.messagebox as message_box
 import pandas
+
 from solver import Solver
+from constants import *
+
 
 CONST_LIMIT = 100
 
@@ -25,7 +28,7 @@ def __pick_save_file_dialog__(callback=None):
 
 
 def __parse_file__(file):
-    data = pandas.ExcelFile(file, dtype=float).parse()
+    data = pandas.ExcelFile(file, dtype=DEFAULT_FLOAT_TYPE).parse()
     columns = data.keys().tolist()
     data_dict = {'x': {}, 'y': {}}
     tmp_dict = defaultdict(list)
@@ -235,7 +238,15 @@ class Application:
         self._find_lambdas_checkbutton = tk.Checkbutton(self._additional_frame, text='Find lambda matrix in 3d systems',
                                                         variable=self._find_lambdas)
         self._find_lambdas_checkbutton.pack(fill='x')
-        #            #additional frame
+        #                   #
+        #                # pick epsilon
+        self._pick_epsilon_frame = tk.Frame(self._additional_frame)
+        tk.Label(self._pick_epsilon_frame, text = 'eps ').pack(side='left')
+        self._pick_epsilon_edit = tk.Entry(self._pick_epsilon_frame, width=5)
+        self._pick_epsilon_edit.insert(0,'1e-6')
+        self._pick_epsilon_edit.pack(side='right')
+        self._pick_epsilon_frame.pack(fill='x')
+        #                # pick epsilon
         self._additional_frame.pack(fill='x')
         #        #!global additional frame
         self._global_additional_frame.pack(side='left', fill='x')
@@ -335,13 +346,19 @@ class Application:
         degree_x3 = int(self._degree_of_x3.get())
         degrees = [degree_x1, degree_x2, degree_x3]
 
+        eps = None
+        try:
+            eps = float(self._pick_epsilon_edit.get())
+        finally:
+            pass
+
         if self._weights.get() == 1:
             weights = 'average'
         else:
             weights = 'minmax'
         find_lambda = bool(self._find_lambdas.get())
 
-        s = Solver(self._data, samples, degrees, weights, polynom, find_lambda)
+        s = Solver(self._data, samples, degrees, weights, polynom, find_lambda, epsilon=eps)
         results = s.do_something()
         self.reset_and_insert_results(results)
         self.__write_to_file__(results)

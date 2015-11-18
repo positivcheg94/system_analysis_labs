@@ -1,20 +1,15 @@
 from copy import deepcopy
 from itertools import accumulate, chain
 from operator import add, mul
+
 from scipy import special
 from scipy.optimize import minimize_scalar
 import numpy as np
 import matplotlib.pyplot as plt
-from openpyxl import Workbook
 import scipy
+
 from constants import *
 from polynom_representation import Representation
-
-
-def print_matrix_to_ws(ws, m, name):
-    ws.append([name])
-    for i in m:
-        ws.append(i.tolist())
 
 
 def __set_value_on_position__(array, position, value):
@@ -34,7 +29,6 @@ def __coord_descent__(a_matrix, b_vector, eps):
     error = float('inf')
 
     iteration = 1
-
     while error > eps:
         x_ = np.array(x)
         for i in range(len(x)):
@@ -79,22 +73,15 @@ def __jacobi__(a_matrix, b_vector, eps):
         error = np.linalg.norm(x - x_)
 
 
-def __minimize_equation__(a_matrix, b_vector, method=DEFAULT_METHOD):
+def __minimize_equation__(a_matrix, b_vector, eps, method=DEFAULT_METHOD):
     if method is 'cdesc':
-        return __coord_descent__(a_matrix, b_vector, CONST_EPS)
+        return __coord_descent__(a_matrix, b_vector, eps)
     elif method is 'seidel':
-        return __gauss_seidel__(a_matrix, b_vector, CONST_EPS)
+        return __gauss_seidel__(a_matrix, b_vector, eps)
     elif method is 'jacobi':
-        return __gauss_seidel__(a_matrix, b_vector, CONST_EPS)
+        return __gauss_seidel__(a_matrix, b_vector, eps)
     else:
-        return scipy.linalg.lstsq(a_matrix, b_vector, CONST_EPS)[0]
-
-
-def __tricky_minimize__(a_matrix, b, trick=False, method=DEFAULT_METHOD):
-    if trick:
-        a_transpose = a_matrix.T
-        return __minimize_equation__(a_transpose.dot(a_matrix), a_transpose.dot(b), method)
-    return __minimize_equation__(a_matrix, b, method)
+        return scipy.linalg.lstsq(a_matrix, b_vector, eps)[0]
 
 
 def __normalize_vector__(v):
@@ -156,8 +143,8 @@ def __make_a_matrix__(x, p, polynom):
     return a_matrix
 
 
-def __make_lambdas__(a_matrix, b_matrix):
-    return np.array([__tricky_minimize__(a_matrix, b) for b in b_matrix])
+def __make_lambdas__(a_matrix, b_matrix, eps):
+    return np.array([__minimize_equation__(a_matrix, b, eps) for b in b_matrix])
 
 
 def __x_i_j_dimensions__(x_matrix):
@@ -186,13 +173,13 @@ def __make_psi__(a_matrix, x_matrix, lambdas, p):
     return np.array(psi)
 
 
-def __make_a_small_matrix__(y_matrix, psi_matrix, dims_x_i):
+def __make_a_small_matrix__(y_matrix, psi_matrix, dims_x_i, eps):
     a = []
     for i in range(len(y_matrix)):
         a_i_k = []
         last = 0
         for j in accumulate(dims_x_i, func=add):
-            a_i_k.append(__tricky_minimize__(psi_matrix[i][:, last:j], y_matrix[i]))
+            a_i_k.append(__minimize_equation__(psi_matrix[i][:, last:j], y_matrix[i], eps))
             last = j
         a.append(list(chain(a_i_k)))
     return np.array(a)
@@ -210,8 +197,8 @@ def __make_f_i__(a_small, psi_matrix, dims_x_i):
     return np.array(f_i)
 
 
-def __make_c_small__(y_matrix, f_i):
-    return np.array([__tricky_minimize__(np.column_stack(i), j) for i, j in zip(f_i, y_matrix)])
+def __make_c_small__(y_matrix, f_i, eps):
+    return np.array([__minimize_equation__(np.column_stack(i), j, eps) for i, j in zip(f_i, y_matrix)])
 
 
 def __make_f__(f_i, c):
@@ -227,9 +214,14 @@ def __real_f__(real_y, f):
 
 
 class Solver(object):
-    def __init__(self, data, samples, degrees, weights, poly_type='chebyshev', find_split_lambdas=False):
-        self.wb = Workbook()
-        self.ws = self.wb.active
+    def __init__(self, data, samples, degrees, weights, poly_type='chebyshev', find_split_lambdas=False, **kwargs):
+
+        self.eps = CONST_EPS
+        if 'epsilon' in kwargs:
+            try:
+                self.eps = np.float64(kwargs['epsilon'])
+            finally:
+                pass
 
         self.n = samples
         self.data = data
@@ -259,11 +251,11 @@ class Solver(object):
         p = self.p
         B = __make_b_matrix__(y_normed, self.weights)
         A = __make_a_matrix__(x_normed, p, self.polynom_type)
-        lambdas = __make_lambdas__(A, B)
+        lambdas = __make_lambdas__(A, B, self.eps)
         psi_matrix = __make_psi__(A, x_normed, lambdas, p)
-        a_small = __make_a_small_matrix__(y_normed, psi_matrix, dims_x_i)
+        a_small = __make_a_small_matrix__(y_normed, psi_matrix, dims_x_i, self.eps)
         f_i = __make_f_i__(a_small, psi_matrix, dims_x_i)
-        c = __make_c_small__(y_normed, f_i)
+        c = __make_c_small__(y_normed, f_i, self.eps)
         f = __make_f__(f_i, c)
         real_f = __real_f__(real_y, f)
 
@@ -279,10 +271,9 @@ class Solver(object):
                                         self.dims_x_i, self.y_scales)
         normed_error = np.linalg.norm(y_normed - f, np.inf, axis=1)
         error = np.linalg.norm(real_y - real_f, np.inf, axis=1)
-        error = "normed Y errors - {:s}\nY errors - {:s}".format(str(normed_error),str(error))
+        error = "normed Y errors - {:s}\nY errors - {:s}".format(str(normed_error), str(error))
         result = representation.do_calculations()
         return "\n\n".join([result, error])
 
     def plot_graphs(self):
         pass
-

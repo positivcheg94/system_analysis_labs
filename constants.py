@@ -1,4 +1,8 @@
-CONST_EPS = 1e-12
+import numpy as np
+
+DEFAULT_FLOAT_TYPE = np.float128
+
+CONST_EPS = 1e-8
 
 CHEBYSHEV = 'chebyshev'
 CHEBYSHEV_SYMBOL = 'T'
