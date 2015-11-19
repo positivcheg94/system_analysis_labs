@@ -2,11 +2,11 @@ from copy import deepcopy
 from itertools import accumulate, chain
 from operator import add, mul
 
-from scipy import special
-from scipy.optimize import minimize_scalar
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
+from scipy import special
+from scipy.optimize import minimize_scalar
 
 from constants import *
 from polynom_representation import Representation
@@ -147,6 +147,20 @@ def __make_lambdas__(a_matrix, b_matrix, eps):
     return np.array([__minimize_equation__(a_matrix, b, eps) for b in b_matrix])
 
 
+def __make_split_lambdas__(a_matrix, b_matrix, eps, dims_x_i, p):
+    lambdas = []
+
+    for i in range(len(b_matrix)):
+        start = 0
+        lambdas_i = []
+        for end in accumulate(dims_x_i * p):
+            lambdas_i.append(__minimize_equation__(a_matrix[start:end], b_matrix[i], eps))
+            start = end
+        lambdas.append(np.hstack(lambdas_i))
+
+    return np.array(lambdas)
+
+
 def __x_i_j_dimensions__(x_matrix):
     return [i for i in range(len(x_matrix)) for j in x_matrix[i]]
 
@@ -213,67 +227,55 @@ def __real_f__(real_y, f):
     return np.array(real_f)
 
 
-class Solver(object):
-    def __init__(self, data, samples, degrees, weights, poly_type='chebyshev', find_split_lambdas=False, **kwargs):
+def process_calculations(data, degrees, weights, poly_type='chebyshev', find_split_lambdas=False, **kwargs):
+    eps = CONST_EPS
+    if 'epsilon' in kwargs:
+        try:
+            eps = DEFAULT_FLOAT_TYPE(kwargs['epsilon'])
+        finally:
+            pass
 
-        self.eps = CONST_EPS
-        if 'epsilon' in kwargs:
-            try:
-                self.eps = np.float64(kwargs['epsilon'])
-            finally:
-                pass
+    x = deepcopy(data['x'])
+    y = deepcopy(data['y'])
 
-        self.n = samples
-        self.data = data
-        self.x = deepcopy(self.data['x'])
-        self.y = deepcopy(self.data['y'])
+    dims_x_i = np.array([len(x[i]) for i in sorted(x)])
 
-        self.dims_x_i = np.array([len(self.x[i]) for i in sorted(self.x)])
+    x_matrix = np.array([x[i] for i in sorted(x)])
+    y_matrix = np.array([y[i] for i in sorted(y)])
 
-        self.X = np.array([self.x[i] for i in sorted(self.x)])
-        self.Y = np.array([self.y[i] for i in sorted(self.y)])
+    # norm data
+    x_normed_matrix, x_scales = __normalize_x_matrix__(x_matrix)
+    y_normed_matrix, y_scales = __normalize_y_matrix__(y_matrix)
 
-        # norm data
-        self.normed_X, self.x_scales = __normalize_x_matrix__(self.X)
-        self.normed_Y, self.y_scales = __normalize_y_matrix__(self.Y)
+    p = np.array(degrees)
+    weights = np.array(weights)
+    polynom_type = __get_polynom_function__(poly_type)
 
-        self.p = np.array(degrees)
-        self.weights = weights
-        self.polynom_type = __get_polynom_function__(poly_type)
-        self.find_split_lambdas = find_split_lambdas
+    n = len(x_normed_matrix[0][0])
 
-    def do_something(self):
-        n = len(self.normed_X[0][0])
-        real_y = self.Y
-        x_normed = self.normed_X
-        dims_x_i = self.dims_x_i
-        y_normed = self.normed_Y
-        p = self.p
-        B = __make_b_matrix__(y_normed, self.weights)
-        A = __make_a_matrix__(x_normed, p, self.polynom_type)
-        lambdas = __make_lambdas__(A, B, self.eps)
-        psi_matrix = __make_psi__(A, x_normed, lambdas, p)
-        a_small = __make_a_small_matrix__(y_normed, psi_matrix, dims_x_i, self.eps)
-        f_i = __make_f_i__(a_small, psi_matrix, dims_x_i)
-        c = __make_c_small__(y_normed, f_i, self.eps)
-        f = __make_f__(f_i, c)
-        real_f = __real_f__(real_y, f)
+    dims_x_i = dims_x_i
 
-        arg = np.arange(n)
+    b_matrix = __make_b_matrix__(y_normed_matrix, weights)
+    a_matrix = __make_a_matrix__(x_normed_matrix, p, polynom_type)
+    lambdas = __make_lambdas__(a_matrix, b_matrix, eps)
+    psi_matrix = __make_psi__(a_matrix, x_normed_matrix, lambdas, p)
+    a_small = __make_a_small_matrix__(y_normed_matrix, psi_matrix, dims_x_i, eps)
+    f_i = __make_f_i__(a_small, psi_matrix, dims_x_i)
+    c = __make_c_small__(y_normed_matrix, f_i, eps)
+    f = __make_f__(f_i, c)
+    real_f = __real_f__(y_matrix, f)
 
-        plt.plot(arg, real_y[0], 'b', arg, real_f[0], 'r')
-        plt.show()
+    arg = np.arange(n)
 
-        plt.plot(arg, real_y[1], 'b', arg, real_f[1], 'r')
-        plt.show()
+    plt.plot(arg, y_matrix[0], 'b', arg, real_f[0], 'r')
+    plt.show()
 
-        representation = Representation(self.polynom_type, p, c, f_i, a_small, psi_matrix, lambdas, self.x_scales,
-                                        self.dims_x_i, self.y_scales)
-        normed_error = np.linalg.norm(y_normed - f, np.inf, axis=1)
-        error = np.linalg.norm(real_y - real_f, np.inf, axis=1)
-        error = "normed Y errors - {:s}\nY errors - {:s}".format(str(normed_error), str(error))
-        result = representation.do_calculations()
-        return "\n\n".join([result, error])
+    plt.plot(arg, y_matrix[1], 'b', arg, real_f[1], 'r')
+    plt.show()
 
-    def plot_graphs(self):
-        pass
+    representation = Representation(polynom_type, p, c, f_i, a_small, psi_matrix, lambdas, x_scales, dims_x_i, y_scales)
+    normed_error = np.linalg.norm(y_normed_matrix - f, np.inf, axis=1)
+    error = np.linalg.norm(y_matrix - real_f, np.inf, axis=1)
+    error = "normed Y errors - {:s}\nY errors - {:s}".format(str(normed_error), str(error))
+    result = representation.do_calculations()
+    return "\n\n".join([result, error])

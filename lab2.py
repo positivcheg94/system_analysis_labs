@@ -7,7 +7,7 @@ import tkinter.filedialog as file_dialog
 import tkinter.messagebox as message_box
 import pandas
 
-from solver import Solver
+from solver import process_calculations
 from constants import *
 
 
@@ -358,8 +358,7 @@ class Application:
             weights = 'minmax'
         find_lambda = bool(self._find_lambdas.get())
 
-        s = Solver(self._data, samples, degrees, weights, polynom, find_lambda, epsilon=eps)
-        results = s.do_something()
+        results = process_calculations(self._data, degrees, weights, polynom, find_lambda, epsilon=eps)
         self.reset_and_insert_results(results)
         self.__write_to_file__(results)
 

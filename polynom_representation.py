@@ -75,6 +75,7 @@ def __transform_f_to_usual_polynomial_form__(f_polynoms):
 
 
 def __unshifted_f_polynoms__(f_real_polynoms, x_scales):
+    p_x_0 = Polynomial([0, 1], domain=DOM, window=DOM)
     unshifted_real_polynom = []
     for f_polynom in f_real_polynoms:
         f_i = []
@@ -84,6 +85,7 @@ def __unshifted_f_polynoms__(f_real_polynoms, x_scales):
                 shift, zoom = x_scales[i][j]
                 poly = Polynomial(f_polynom[i][j].convert(domain=DOM, window=DOM * zoom + shift).coef, domain=DOM,
                                   window=DOM)
+                poly2 = f_polynom[i][j]((p_x_0 - shift) / zoom)
                 f_i_g.append(poly)
             f_i.append(f_i_g)
         unshifted_real_polynom.append(f_i)
