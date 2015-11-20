@@ -152,7 +152,7 @@ def __make_split_lambdas__(a_matrix, b_matrix, eps, method, dims_x_i, p):
         start = 0
         lambdas_i = []
         for end in accumulate(dims_x_i * p):
-            lambdas_i.append(__minimize_equation__(a_matrix[:,start:end], b_matrix[i], eps, method))
+            lambdas_i.append(__minimize_equation__(a_matrix[:, start:end], b_matrix[i], eps, method))
             start = end
         lambdas.append(np.hstack(lambdas_i))
 
@@ -191,7 +191,7 @@ def __make_a_small_matrix__(y_matrix, psi_matrix, eps, method, dims_x_i):
         a_i_k = []
         last = 0
         for j in accumulate(dims_x_i, func=add):
-            a_i_k.append(__minimize_equation__(psi_matrix[i][:, last:j], y_matrix[i], eps))
+            a_i_k.append(__minimize_equation__(psi_matrix[i][:, last:j], y_matrix[i], eps, method))
             last = j
         a.append(list(chain(a_i_k)))
     return np.array(a)
@@ -234,7 +234,7 @@ def __plot_of_y_y_approximation__(y, y_approximation, name='no_name'):
 
 def __show_plots__(y, y_approximation):
     for i, j, k in zip(y, y_approximation, range(len(y))):
-        __plot_of_y_y_approximation__(i, j, 'Y-{:d}'.format(k))
+        __plot_of_y_y_approximation__(i, j, 'Y-{:d}'.format(k + 1))
 
 
 def process_calculations(data, degrees, weights, method, poly_type='chebyshev', find_split_lambdas=False, **kwargs):
@@ -277,7 +277,7 @@ def process_calculations(data, degrees, weights, method, poly_type='chebyshev', 
     a_small = __make_a_small_matrix__(y_normed_matrix, psi_matrix, eps, method, dims_x_i)
 
     f_i = __make_f_i__(a_small, psi_matrix, dims_x_i)
-    
+
     c = __make_c_small__(y_normed_matrix, f_i, eps, method)
     f = __make_f__(f_i, c)
     real_f = __real_f__(y_matrix, f)
