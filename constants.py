@@ -1,6 +1,6 @@
-import numpy as np
+import numpy
 
-DEFAULT_FLOAT_TYPE = np.float128
+DEFAULT_FLOAT_TYPE = numpy.float128
 
 CONST_EPS = 1e-8
 
@@ -15,4 +15,6 @@ HERMITE_SYMBOL = 'H'
 
 NAME = 'temp.xlsx'
 
-DEFAULT_METHOD = 'lstsq'
+DEFAULT_METHOD = 'Least squares'
+
+OPTIMIZATION_METHODS = {'Least squares': 'lstsq', 'Coordinate descent': 'cdesc', 'Seidel': 'seidel', 'Jakobi': 'jakobi'}

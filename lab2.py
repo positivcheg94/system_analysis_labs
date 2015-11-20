@@ -6,10 +6,10 @@ import tkinter as tk
 import tkinter.filedialog as file_dialog
 import tkinter.messagebox as message_box
 import pandas
-
 from solver import process_calculations
 from constants import *
 
+from threading import Thread
 
 CONST_LIMIT = 100
 
@@ -62,12 +62,17 @@ class Application:
         # self.resizeable(False)
 
     def __init_widgets__(self):
+        self._last_plots = None
+
         self._data = None
 
         self._last_result = None
 
         self._samples = tk.StringVar()
         self._samples.set('50')
+
+        self._method = tk.StringVar()
+        self._method.set(DEFAULT_METHOD)
 
         self._polynom_var = tk.IntVar()
         self._polynom_var.set(1)
@@ -238,14 +243,20 @@ class Application:
         self._find_lambdas_checkbutton = tk.Checkbutton(self._additional_frame, text='Find lambda matrix in 3d systems',
                                                         variable=self._find_lambdas)
         self._find_lambdas_checkbutton.pack(fill='x')
-        #                   #
         #                # pick epsilon
         self._pick_epsilon_frame = tk.Frame(self._additional_frame)
-        tk.Label(self._pick_epsilon_frame, text = 'eps ').pack(side='left')
+        tk.Label(self._pick_epsilon_frame, text='eps').pack(side='left')
         self._pick_epsilon_edit = tk.Entry(self._pick_epsilon_frame, width=5)
-        self._pick_epsilon_edit.insert(0,'1e-6')
+        self._pick_epsilon_edit.insert(0, '1e-6')
         self._pick_epsilon_edit.pack(side='right')
-        self._pick_epsilon_frame.pack(fill='x')
+        self._pick_epsilon_frame.pack(anchor='n')
+        #                #! pick epsilon
+        #                # pick epsilon
+        self._pick_method_frame = tk.Frame(self._additional_frame)
+        tk.Label(self._pick_method_frame, text='Optimization method').pack(side='left')
+        self._pick_method = tk.OptionMenu(self._pick_method_frame, self._method, *tuple(OPTIMIZATION_METHODS))
+        self._pick_method.pack(side='right')
+        self._pick_method_frame.pack(anchor='n')
         #                # pick epsilon
         self._additional_frame.pack(fill='x')
         #        #!global additional frame
@@ -272,8 +283,9 @@ class Application:
 
         self._result_frame = tk.Frame(self._bottom_block)
         self._result_window_scrollbar = tk.Scrollbar(self._result_frame)
-        self._result_window_scrollbar.pack(side='right',fill='y')
-        self._result_window = tk.Text(self._result_frame, state='disabled', yscrollcommand=self._result_window_scrollbar.set)
+        self._result_window_scrollbar.pack(side='right', fill='y')
+        self._result_window = tk.Text(self._result_frame, state='disabled',
+                                      yscrollcommand=self._result_window_scrollbar.set)
         self._result_window.pack(fill='both')
         self._result_window_scrollbar.config(command=self._result_window.yview)
         self._result_frame.pack(fill='x')
@@ -327,7 +339,7 @@ class Application:
         self.__update_info__()
 
     def __make_calculations__(self):
-        if self._input_file_name is None or self._result_file_name == None:
+        if self._input_file_name is None or self._result_file_name is None:
             self.__show_error__('Open File Error', 'You did not pick the files')
             return
         samples = int(self._sample_size_frame_entry.get())
@@ -358,13 +370,14 @@ class Application:
             weights = 'minmax'
         find_lambda = bool(self._find_lambdas.get())
 
-        results = process_calculations(self._data, degrees, weights, polynom, find_lambda, epsilon=eps)
+        method = OPTIMIZATION_METHODS[self._method.get()]
+
+        results, self._last_plots = process_calculations(self._data, degrees, weights, method, polynom, find_lambda, epsilon=eps)
         self.reset_and_insert_results(results)
         self.__write_to_file__(results)
 
     def _make_plot(self):
-        if self._last_result is not None:
-            self._last_result.plot_graphs()
+        self._last_plots()
 
     def __del__(self):
         try:
@@ -378,8 +391,8 @@ class Application:
         self._result_window.insert(1.0, results)
         self._result_window.config(state='disabled')
 
-    def __write_to_file__(self,data):
-        open(self._result_file_name,'w').write(data)
+    def __write_to_file__(self, data):
+        open(self._result_file_name, 'w').write(data)
 
     def execute(self):
         self._main_window.mainloop()

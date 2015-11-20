@@ -1,15 +1,13 @@
 from copy import deepcopy
 from itertools import accumulate, chain
 from operator import add, mul
-
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
 from scipy import special
 from scipy.optimize import minimize_scalar
-
 from constants import *
-from polynom_representation import Representation
+from polynom_representation import polynom_representation_add
 
 
 def __set_value_on_position__(array, position, value):
@@ -143,18 +141,18 @@ def __make_a_matrix__(x, p, polynom):
     return a_matrix
 
 
-def __make_lambdas__(a_matrix, b_matrix, eps):
-    return np.array([__minimize_equation__(a_matrix, b, eps) for b in b_matrix])
+def __make_lambdas__(a_matrix, b_matrix, eps, method):
+    return np.array([__minimize_equation__(a_matrix, b, eps, method) for b in b_matrix])
 
 
-def __make_split_lambdas__(a_matrix, b_matrix, eps, dims_x_i, p):
+def __make_split_lambdas__(a_matrix, b_matrix, eps, method, dims_x_i, p):
     lambdas = []
 
     for i in range(len(b_matrix)):
         start = 0
         lambdas_i = []
         for end in accumulate(dims_x_i * p):
-            lambdas_i.append(__minimize_equation__(a_matrix[start:end], b_matrix[i], eps))
+            lambdas_i.append(__minimize_equation__(a_matrix[:,start:end], b_matrix[i], eps, method))
             start = end
         lambdas.append(np.hstack(lambdas_i))
 
@@ -187,7 +185,7 @@ def __make_psi__(a_matrix, x_matrix, lambdas, p):
     return np.array(psi)
 
 
-def __make_a_small_matrix__(y_matrix, psi_matrix, dims_x_i, eps):
+def __make_a_small_matrix__(y_matrix, psi_matrix, eps, method, dims_x_i):
     a = []
     for i in range(len(y_matrix)):
         a_i_k = []
@@ -211,8 +209,8 @@ def __make_f_i__(a_small, psi_matrix, dims_x_i):
     return np.array(f_i)
 
 
-def __make_c_small__(y_matrix, f_i, eps):
-    return np.array([__minimize_equation__(np.column_stack(i), j, eps) for i, j in zip(f_i, y_matrix)])
+def __make_c_small__(y_matrix, f_i, eps, method):
+    return np.array([__minimize_equation__(np.column_stack(i), j, eps, method) for i, j in zip(f_i, y_matrix)])
 
 
 def __make_f__(f_i, c):
@@ -227,7 +225,19 @@ def __real_f__(real_y, f):
     return np.array(real_f)
 
 
-def process_calculations(data, degrees, weights, poly_type='chebyshev', find_split_lambdas=False, **kwargs):
+def __plot_of_y_y_approximation__(y, y_approximation, name='no_name'):
+    plt.title(name)
+    plt.plot(y, 'b')
+    plt.plot(y_approximation, 'r')
+    plt.show()
+
+
+def __show_plots__(y, y_approximation):
+    for i, j, k in zip(y, y_approximation, range(len(y))):
+        __plot_of_y_y_approximation__(i, j, 'Y-{:d}'.format(k))
+
+
+def process_calculations(data, degrees, weights, method, poly_type='chebyshev', find_split_lambdas=False, **kwargs):
     eps = CONST_EPS
     if 'epsilon' in kwargs:
         try:
@@ -251,31 +261,31 @@ def process_calculations(data, degrees, weights, poly_type='chebyshev', find_spl
     weights = np.array(weights)
     polynom_type = __get_polynom_function__(poly_type)
 
-    n = len(x_normed_matrix[0][0])
-
     dims_x_i = dims_x_i
 
     b_matrix = __make_b_matrix__(y_normed_matrix, weights)
+
     a_matrix = __make_a_matrix__(x_normed_matrix, p, polynom_type)
-    lambdas = __make_lambdas__(a_matrix, b_matrix, eps)
+
+    if find_split_lambdas:
+        lambdas = __make_split_lambdas__(a_matrix, b_matrix, eps, method, dims_x_i, p)
+    else:
+        lambdas = __make_lambdas__(a_matrix, b_matrix, eps, method)
+
     psi_matrix = __make_psi__(a_matrix, x_normed_matrix, lambdas, p)
-    a_small = __make_a_small_matrix__(y_normed_matrix, psi_matrix, dims_x_i, eps)
+
+    a_small = __make_a_small_matrix__(y_normed_matrix, psi_matrix, eps, method, dims_x_i)
+
     f_i = __make_f_i__(a_small, psi_matrix, dims_x_i)
-    c = __make_c_small__(y_normed_matrix, f_i, eps)
+    
+    c = __make_c_small__(y_normed_matrix, f_i, eps, method)
     f = __make_f__(f_i, c)
     real_f = __real_f__(y_matrix, f)
 
-    arg = np.arange(n)
-
-    plt.plot(arg, y_matrix[0], 'b', arg, real_f[0], 'r')
-    plt.show()
-
-    plt.plot(arg, y_matrix[1], 'b', arg, real_f[1], 'r')
-    plt.show()
-
-    representation = Representation(polynom_type, p, c, f_i, a_small, psi_matrix, lambdas, x_scales, dims_x_i, y_scales)
     normed_error = np.linalg.norm(y_normed_matrix - f, np.inf, axis=1)
     error = np.linalg.norm(y_matrix - real_f, np.inf, axis=1)
     error = "normed Y errors - {:s}\nY errors - {:s}".format(str(normed_error), str(error))
-    result = representation.do_calculations()
-    return "\n\n".join([result, error])
+
+    result = polynom_representation_add(polynom_type, p, dims_x_i, x_scales, lambdas, a_small, c)
+
+    return "\n\n".join([result, error]), lambda: __show_plots__(y_matrix, real_f)
