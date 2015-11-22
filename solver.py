@@ -261,8 +261,6 @@ def process_calculations(data, degrees, weights, method, poly_type='chebyshev', 
     weights = np.array(weights)
     polynom_type = __get_polynom_function__(poly_type)
 
-    dims_x_i = dims_x_i
-
     b_matrix = __make_b_matrix__(y_normed_matrix, weights)
 
     a_matrix = __make_a_matrix__(x_normed_matrix, p, polynom_type)
@@ -289,3 +287,49 @@ def process_calculations(data, degrees, weights, method, poly_type='chebyshev', 
     result = polynom_representation_add(polynom_type, p, dims_x_i, x_scales, lambdas, a_small, c)
 
     return "\n\n".join([result, error]), lambda: __show_plots__(y_matrix, real_f)
+
+
+def find_best_degrees(data, max_degrees, weights, method, poly_type='chebyshev', find_split_lambdas=False, **kwargs):
+    results = []
+    eps = CONST_EPS
+    if 'epsilon' in kwargs:
+        try:
+            eps = DEFAULT_FLOAT_TYPE(kwargs['epsilon'])
+        finally:
+            pass
+
+    x = data['x']
+    y = data['y']
+
+    dims_x_i = np.array([len(x[i]) for i in sorted(x)])
+
+    x_matrix = np.array([x[i] for i in sorted(x)])
+    y_matrix = np.array([y[i] for i in sorted(y)])
+
+    # norm data
+    x_normed_matrix, x_scales = __normalize_x_matrix__(x_matrix)
+    y_normed_matrix, y_scales = __normalize_y_matrix__(y_matrix)
+
+    max_p = np.array(max_degrees)
+    weights = np.array(weights)
+    polynom_type = __get_polynom_function__(poly_type)
+
+    
+
+
+def calculate_error_for_degrees(degrees, x_normed_matrix, y_normed_matrix, b_matrix, dims_x_i, polynom_type, eps,
+                                method, find_split_lambdas):
+    p = np.array(degrees)
+
+    a_matrix = __make_a_matrix__(x_normed_matrix, p, polynom_type)
+    if find_split_lambdas:
+        lambdas = __make_split_lambdas__(a_matrix, b_matrix, eps, method, dims_x_i, p)
+    else:
+        lambdas = __make_lambdas__(a_matrix, b_matrix, eps, method)
+    psi_matrix = __make_psi__(a_matrix, x_normed_matrix, lambdas, p)
+    a_small = __make_a_small_matrix__(y_normed_matrix, psi_matrix, eps, method, dims_x_i)
+    f_i = __make_f_i__(a_small, psi_matrix, dims_x_i)
+    c = __make_c_small__(y_normed_matrix, f_i, eps, method)
+    f = __make_f__(f_i, c)
+
+    return np.linalg.norm(y_normed_matrix - f, np.inf, axis=1)

@@ -1,6 +1,0 @@
-||Ax-b||->min
-(Ax-b,Ax-b)->min
-(Ax,Ax)-2(Ax,b)+(b,b)->0
-(A^tAx,x)-2(x,A^tb)+(b,b)
-2A^tAx-2A^tb=0
-x=(A^tA)^-1*(A^tb)
