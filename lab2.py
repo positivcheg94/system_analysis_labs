@@ -2,15 +2,16 @@
 
 from os import path
 from collections import defaultdict
+
 import tkinter as tk
 import tkinter.filedialog as file_dialog
 import tkinter.messagebox as message_box
 import pandas
+
 from solver import process_calculations_for_additive, find_best_degrees_for_additive
 from constants import *
-from threading import Thread
 
-CONST_LIMIT = 100
+CONST_LIMIT = 1000
 
 
 def __validate_only_digits__(S):

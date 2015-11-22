@@ -18,4 +18,5 @@ NAME = 'temp.xlsx'
 
 DEFAULT_METHOD = 'Least squares'
 
-OPTIMIZATION_METHODS = {'Least squares': 'lstsq', 'Coordinate descent': 'cdesc', 'Seidel': 'seidel', 'Jakobi': 'jakobi'}
+OPTIMIZATION_METHODS = {'Least squares': 'lstsq', 'Coordinate descent': 'cdesc', 'Seidel': 'seidel', 'Jakobi': 'jakobi',
+                        'Conjugate gradient': 'conj'}

@@ -76,13 +76,35 @@ def __jacobi__(a_matrix, b_vector, eps):
         error = np.linalg.norm(x - x_)
 
 
+def conjugate_gradient(A, b, eps):
+    n = len(A)
+    x_last = np.zeros(n, dtype=DEFAULT_FLOAT_TYPE)
+    z_last = r_last = b - A.dot(x_last)
+    i = 0
+    b_norm = np.linalg.norm(b)
+    while True:
+        i += 1
+        alpha = r_last.dot(r_last) / A.dot(z_last).dot(z_last)
+        x = x_last + alpha * z_last
+        r = r_last - alpha * A.dot(z_last)
+        beta = r.dot(r) / r_last.dot(r_last)
+        z = r + beta * z_last
+        if np.linalg.norm(r) / b_norm < eps:
+            break
+        else:
+            x_last, r_last, z_last = x, r, z
+    return x
+
+
 def __minimize_equation__(a_matrix, b_vector, eps, method=DEFAULT_METHOD):
     if method is 'cdesc':
         return __coord_descent__(a_matrix, b_vector, eps)
     elif method is 'seidel':
         return __gauss_seidel__(a_matrix, b_vector, eps)
     elif method is 'jacobi':
-        return __gauss_seidel__(a_matrix, b_vector, eps)
+        return __jacobi__(a_matrix, b_vector, eps)
+    elif method is 'conj':
+        return conjugate_gradient(a_matrix.T.dot(a_matrix),a_matrix.T.dot(b_vector), eps)
     else:
         return scipy.linalg.lstsq(a_matrix, b_vector, eps)[0]
 
@@ -295,7 +317,8 @@ def process_calculations_for_additive(data, degrees, weights, method, poly_type=
     return "\n\n".join([result, error]), lambda: __show_plots__(y_matrix, real_f)
 
 
-def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, y_matrix, b_matrix, dims_x_i, polynom_type, eps,
+def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, y_matrix, b_matrix, dims_x_i,
+                                    polynom_type, eps,
                                     method, find_split_lambdas):
     p = np.array(degrees)
 
@@ -359,8 +382,11 @@ def find_best_degrees_for_additive(data, max_degrees, weights, method, poly_type
         best_results.append(br)
 
     text_result = '\n'.join('Best degrees for Y{} are {} with normed error - {}'.format(i + 1,
-        __convert_degrees_to_string__(best_results[i]['degrees']),best_results[i]['norm']) for i in range(len(best_results)))
+                                                                                        __convert_degrees_to_string__(
+                                                                                            best_results[i]['degrees']),
+                                                                                        best_results[i]['norm']) for i
+                            in range(len(best_results)))
 
-    plots = lambda : __show_plots__(y_matrix, [br['f'] for br in best_results])
+    plots = lambda: __show_plots__(y_matrix, [br['f'] for br in best_results])
 
     return text_result, plots
