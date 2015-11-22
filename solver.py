@@ -1,6 +1,7 @@
 from copy import deepcopy
-from itertools import accumulate, chain
+from itertools import accumulate, chain, product
 from operator import add, mul
+import multiprocessing as mp
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
@@ -8,6 +9,10 @@ from scipy import special
 from scipy.optimize import minimize_scalar
 from constants import *
 from polynom_representation import polynom_representation_add
+
+
+def __convert_degrees_to_string__(degrees):
+    return ' '.join('X{:d} - {:d}'.format(i + 1, degrees[i]) for i in range(len(degrees)))
 
 
 def __set_value_on_position__(array, position, value):
@@ -237,7 +242,8 @@ def __show_plots__(y, y_approximation):
         __plot_of_y_y_approximation__(i, j, 'Y-{:d}'.format(k + 1))
 
 
-def process_calculations(data, degrees, weights, method, poly_type='chebyshev', find_split_lambdas=False, **kwargs):
+def process_calculations_for_additive(data, degrees, weights, method, poly_type='chebyshev', find_split_lambdas=False,
+                                      **kwargs):
     eps = CONST_EPS
     if 'epsilon' in kwargs:
         try:
@@ -289,8 +295,28 @@ def process_calculations(data, degrees, weights, method, poly_type='chebyshev', 
     return "\n\n".join([result, error]), lambda: __show_plots__(y_matrix, real_f)
 
 
-def find_best_degrees(data, max_degrees, weights, method, poly_type='chebyshev', find_split_lambdas=False, **kwargs):
+def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, b_matrix, dims_x_i, polynom_type, eps,
+                                    method, find_split_lambdas):
+    p = np.array(degrees)
+
+    a_matrix = __make_a_matrix__(x_normed_matrix, p, polynom_type)
+    if find_split_lambdas:
+        lambdas = __make_split_lambdas__(a_matrix, b_matrix, eps, method, dims_x_i, p)
+    else:
+        lambdas = __make_lambdas__(a_matrix, b_matrix, eps, method)
+    psi_matrix = __make_psi__(a_matrix, x_normed_matrix, lambdas, p)
+    a_small = __make_a_small_matrix__(y_normed_matrix, psi_matrix, eps, method, dims_x_i)
+    f_i = __make_f_i__(a_small, psi_matrix, dims_x_i)
+    c = __make_c_small__(y_normed_matrix, f_i, eps, method)
+    f = __make_f__(f_i, c)
+
+    return {'norm': np.linalg.norm(y_normed_matrix - f, np.inf, axis=1), 'degrees': p, 'f': f}
+
+
+def find_best_degrees_for_additive(data, max_degrees, weights, method, poly_type='chebyshev', find_split_lambdas=False,
+                                   **kwargs):
     results = []
+
     eps = CONST_EPS
     if 'epsilon' in kwargs:
         try:
@@ -314,22 +340,27 @@ def find_best_degrees(data, max_degrees, weights, method, poly_type='chebyshev',
     weights = np.array(weights)
     polynom_type = __get_polynom_function__(poly_type)
 
-    
+    b_matrix = __make_b_matrix__(y_normed_matrix, weights)
 
+    pool = mp.Pool()
 
-def calculate_error_for_degrees(degrees, x_normed_matrix, y_normed_matrix, b_matrix, dims_x_i, polynom_type, eps,
-                                method, find_split_lambdas):
-    p = np.array(degrees)
+    for current_degree in product(*[range(1, i) for i in max_p]):
+        pool.apply_async(__calculate_error_for_degrees__, args=(
+            current_degree, x_normed_matrix, y_normed_matrix, b_matrix, dims_x_i, polynom_type, eps, method,
+            find_split_lambdas), callback=lambda result: results.append(result))
+    pool.close()
+    pool.join()
 
-    a_matrix = __make_a_matrix__(x_normed_matrix, p, polynom_type)
-    if find_split_lambdas:
-        lambdas = __make_split_lambdas__(a_matrix, b_matrix, eps, method, dims_x_i, p)
-    else:
-        lambdas = __make_lambdas__(a_matrix, b_matrix, eps, method)
-    psi_matrix = __make_psi__(a_matrix, x_normed_matrix, lambdas, p)
-    a_small = __make_a_small_matrix__(y_normed_matrix, psi_matrix, eps, method, dims_x_i)
-    f_i = __make_f_i__(a_small, psi_matrix, dims_x_i)
-    c = __make_c_small__(y_normed_matrix, f_i, eps, method)
-    f = __make_f__(f_i, c)
+    best_results = []
+    for i in range(len(y_normed_matrix)):
+        res = min(results, key=lambda arg: arg['norm'][i])
+        n, d, f = res
+        br = {n: res[n][i], d: res[d], f: res[f]}
+        best_results.append(br)
 
-    return np.linalg.norm(y_normed_matrix - f, np.inf, axis=1)
+    text_result = '\n\n'.join('Best degrees for Y{} are {} with normed error - {}'.format(i + 1,
+        __convert_degrees_to_string__(best_results[i]['degrees']),best_results[i]['norm']) for i in range(len(best_results)))
+
+    plots = lambda : __show_plots__(y_matrix, [br['f'] for br in best_results])
+
+    return text_result, plots

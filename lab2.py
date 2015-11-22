@@ -6,9 +6,8 @@ import tkinter as tk
 import tkinter.filedialog as file_dialog
 import tkinter.messagebox as message_box
 import pandas
-from solver import process_calculations
+from solver import process_calculations_for_additive, find_best_degrees_for_additive
 from constants import *
-
 from threading import Thread
 
 CONST_LIMIT = 100
@@ -82,6 +81,9 @@ class Application:
 
         self._find_lambdas = tk.IntVar()
         self._find_lambdas.set(0)
+
+        self._find_best_degree = tk.IntVar()
+        self._find_best_degree.set(0)
 
         self._plot_mode = tk.IntVar()
         self._plot_mode.set(1)
@@ -193,6 +195,12 @@ class Application:
         #            #degree of polymonial
 
         self._degree_of_polynomial_frame = tk.Frame(self._polynoms_frame, relief='groove', borderwidth=2)
+        #               #find best degree frame
+        self._find_best_degree_frame = tk.Frame(self._degree_of_polynomial_frame)
+        tk.Checkbutton(self._find_best_degree_frame, variable=self._find_best_degree,
+                       text='Find best degree up to selected').pack(fill='both')
+        self._find_best_degree_frame.pack(fill='x')
+        #               #!find best degree frame
         tk.Label(self._degree_of_polynomial_frame, text='Degree of polynomial').pack(fill='x')
         #                #spinbox 1 frame
         self._spinbox1_frame = tk.Frame(self._degree_of_polynomial_frame)
@@ -342,7 +350,8 @@ class Application:
         if self._input_file_name is None or self._result_file_name is None:
             self.__show_error__('Open File Error', 'You did not pick the files')
             return
-        samples = int(self._sample_size_frame_entry.get())
+        find_best_degrees = bool(self._find_best_degree.get())
+        # samples = int(self._sample_size_frame_entry.get())
         polynom = 'chebyshev'
         p = self._polynom_var.get()
         if p == 1:
@@ -372,9 +381,14 @@ class Application:
 
         method = OPTIMIZATION_METHODS[self._method.get()]
 
-        results, self._last_plots = process_calculations(self._data, degrees, weights, method, polynom, find_lambda, epsilon=eps)
+        if find_best_degrees:
+            results, self._last_plots = find_best_degrees_for_additive(self._data, degrees, weights, method, polynom,
+                                                                       find_lambda, epsilon=eps)
+        else:
+            results, self._last_plots = process_calculations_for_additive(self._data, degrees, weights, method, polynom,
+                                                                          find_lambda, epsilon=eps)
         self.reset_and_insert_results(results)
-        self.__write_to_file__(results)
+        # self.__write_to_file__(results)
 
     def _make_plot(self):
         self._last_plots()
