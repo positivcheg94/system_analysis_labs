@@ -295,7 +295,7 @@ def process_calculations_for_additive(data, degrees, weights, method, poly_type=
     return "\n\n".join([result, error]), lambda: __show_plots__(y_matrix, real_f)
 
 
-def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, b_matrix, dims_x_i, polynom_type, eps,
+def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, y_matrix, b_matrix, dims_x_i, polynom_type, eps,
                                     method, find_split_lambdas):
     p = np.array(degrees)
 
@@ -309,8 +309,9 @@ def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, b
     f_i = __make_f_i__(a_small, psi_matrix, dims_x_i)
     c = __make_c_small__(y_normed_matrix, f_i, eps, method)
     f = __make_f__(f_i, c)
+    real_f = __real_f__(y_matrix, f)
 
-    return {'norm': np.linalg.norm(y_normed_matrix - f, np.inf, axis=1), 'degrees': p, 'f': f}
+    return {'norm': np.linalg.norm(y_normed_matrix - f, np.inf, axis=1), 'degrees': p, 'f': real_f}
 
 
 def find_best_degrees_for_additive(data, max_degrees, weights, method, poly_type='chebyshev', find_split_lambdas=False,
@@ -346,7 +347,7 @@ def find_best_degrees_for_additive(data, max_degrees, weights, method, poly_type
 
     for current_degree in product(*[range(1, i) for i in max_p]):
         pool.apply_async(__calculate_error_for_degrees__, args=(
-            current_degree, x_normed_matrix, y_normed_matrix, b_matrix, dims_x_i, polynom_type, eps, method,
+            current_degree, x_normed_matrix, y_normed_matrix, y_matrix, b_matrix, dims_x_i, polynom_type, eps, method,
             find_split_lambdas), callback=lambda result: results.append(result))
     pool.close()
     pool.join()
@@ -354,11 +355,10 @@ def find_best_degrees_for_additive(data, max_degrees, weights, method, poly_type
     best_results = []
     for i in range(len(y_normed_matrix)):
         res = min(results, key=lambda arg: arg['norm'][i])
-        n, d, f = res
-        br = {n: res[n][i], d: res[d], f: res[f]}
+        br = {'norm': res['norm'][i], 'degrees': res['degrees'], 'f': res['f'][i]}
         best_results.append(br)
 
-    text_result = '\n\n'.join('Best degrees for Y{} are {} with normed error - {}'.format(i + 1,
+    text_result = '\n'.join('Best degrees for Y{} are {} with normed error - {}'.format(i + 1,
         __convert_degrees_to_string__(best_results[i]['degrees']),best_results[i]['norm']) for i in range(len(best_results)))
 
     plots = lambda : __show_plots__(y_matrix, [br['f'] for br in best_results])

@@ -388,7 +388,7 @@ class Application:
             results, self._last_plots = process_calculations_for_additive(self._data, degrees, weights, method, polynom,
                                                                           find_lambda, epsilon=eps)
         self.reset_and_insert_results(results)
-        # self.__write_to_file__(results)
+        self.__write_to_file__(results)
 
     def _make_plot(self):
         self._last_plots()
