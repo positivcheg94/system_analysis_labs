@@ -74,19 +74,20 @@ def __jacobi__(a_matrix, b_vector, eps):
         x_ = x
         x = np.dot(d_inv, b - r.dot(x))
         error = np.linalg.norm(x - x_)
+    return x
 
 
-def conjugate_gradient(A, b, eps):
-    n = len(A)
+def __conjugate_gradient__(a_matrix, b, eps):
+    n = len(a_matrix)
     x_last = np.zeros(n, dtype=DEFAULT_FLOAT_TYPE)
-    z_last = r_last = b - A.dot(x_last)
+    z_last = r_last = b - a_matrix.dot(x_last)
     i = 0
     b_norm = np.linalg.norm(b)
     while True:
         i += 1
-        alpha = r_last.dot(r_last) / A.dot(z_last).dot(z_last)
+        alpha = r_last.dot(r_last) / a_matrix.dot(z_last).dot(z_last)
         x = x_last + alpha * z_last
-        r = r_last - alpha * A.dot(z_last)
+        r = r_last - alpha * a_matrix.dot(z_last)
         beta = r.dot(r) / r_last.dot(r_last)
         z = r + beta * z_last
         if np.linalg.norm(r) / b_norm < eps:
@@ -104,7 +105,7 @@ def __minimize_equation__(a_matrix, b_vector, eps, method=DEFAULT_METHOD):
     elif method is 'jacobi':
         return __jacobi__(a_matrix, b_vector, eps)
     elif method is 'conj':
-        return conjugate_gradient(a_matrix.T.dot(a_matrix),a_matrix.T.dot(b_vector), eps)
+        return __conjugate_gradient__(a_matrix.T.dot(a_matrix), a_matrix.T.dot(b_vector), eps)
     else:
         return scipy.linalg.lstsq(a_matrix, b_vector, eps)[0]
 
