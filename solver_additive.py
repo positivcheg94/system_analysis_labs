@@ -1,13 +1,14 @@
 from copy import deepcopy
 from itertools import accumulate, chain, product
 from operator import add, mul
+
 import multiprocessing as mp
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy
 from scipy import special
-from scipy.optimize import minimize_scalar
-from constants import *
+
+from minimize import *
+from constants import DEFAULT_FLOAT_TYPE, DEFAULT_METHOD, CHEBYSHEV, LAGUERRE, LEGENDRE, HERMITE, CONST_EPS
 from polynom_representation import polynom_representation_add
 
 
@@ -15,99 +16,17 @@ def __convert_degrees_to_string__(degrees):
     return ' '.join('X{:d} - {:d}'.format(i + 1, degrees[i]) for i in range(len(degrees)))
 
 
-def __set_value_on_position__(array, position, value):
-    array[position] = value
-    return array
-
-
-def __coord_descent__(a_matrix, b_vector, eps):
-    def f(var):
-        return np.linalg.norm(a_matrix.dot(var) - b_vector)
-
-    def f_scalar(var, position):
-        var_copy = np.array(var)
-        return lambda t: f(__set_value_on_position__(var_copy, position, t))
-
-    x = np.zeros(len(a_matrix[0]))
-    error = float('inf')
-
-    iteration = 1
-    while error > eps:
-        x_ = np.array(x)
-        for i in range(len(x)):
-            res = minimize_scalar(f_scalar(x, i), method="Golden")
-            x[i] = res.x
-        error = np.linalg.norm(x - x_)
-        iteration += 1
-    return x
-
-
-def __gauss_seidel__(a_matrix, b_vector, eps):
-    a = np.dot(a_matrix.T, a_matrix)
-    b = np.dot(a_matrix.T, b_vector)
-
-    x = np.zeros(a.shape[1])
-    l = np.tril(a)
-    l_inv = np.linalg.inv(l)
-    u = a - l
-
-    error = float('inf')
-    while error > eps:
-        x_ = x
-        x = np.dot(l_inv, b - u.dot(x))
-        error = np.linalg.norm(x - x_)
-
-    return x
-
-
-def __jacobi__(a_matrix, b_vector, eps):
-    a = np.dot(a_matrix.T, a_matrix)
-    b = np.dot(a_matrix.T, b_vector)
-
-    x = np.zeros(a.shape[1])
-    d = np.diag(np.diag(a))
-    d_inv = np.linalg.inv(d)
-    r = a - d
-
-    error = float('inf')
-    while error > eps:
-        x_ = x
-        x = np.dot(d_inv, b - r.dot(x))
-        error = np.linalg.norm(x - x_)
-    return x
-
-
-def __conjugate_gradient__(a_matrix, b, eps):
-    n = len(a_matrix)
-    x_last = np.zeros(n, dtype=DEFAULT_FLOAT_TYPE)
-    z_last = r_last = b - a_matrix.dot(x_last)
-    i = 0
-    b_norm = np.linalg.norm(b)
-    while True:
-        i += 1
-        alpha = r_last.dot(r_last) / a_matrix.dot(z_last).dot(z_last)
-        x = x_last + alpha * z_last
-        r = r_last - alpha * a_matrix.dot(z_last)
-        beta = r.dot(r) / r_last.dot(r_last)
-        z = r + beta * z_last
-        if np.linalg.norm(r) / b_norm < eps:
-            break
-        else:
-            x_last, r_last, z_last = x, r, z
-    return x
-
-
 def __minimize_equation__(a_matrix, b_vector, eps, method=DEFAULT_METHOD):
     if method is 'cdesc':
-        return __coord_descent__(a_matrix, b_vector, eps)
+        return coord_descent(a_matrix, b_vector, eps)
     elif method is 'seidel':
-        return __gauss_seidel__(a_matrix, b_vector, eps)
+        return gauss_seidel(a_matrix, b_vector, eps)
     elif method is 'jacobi':
-        return __jacobi__(a_matrix, b_vector, eps)
+        return jacobi(a_matrix, b_vector, eps)
     elif method is 'conj':
-        return __conjugate_gradient__(a_matrix.T.dot(a_matrix), a_matrix.T.dot(b_vector), eps)
+        return conjugate_gradient(a_matrix.T.dot(a_matrix), a_matrix.T.dot(b_vector), eps)
     else:
-        return scipy.linalg.lstsq(a_matrix, b_vector, eps)[0]
+        return least_squares(a_matrix, b_vector, eps)
 
 
 def __normalize_vector__(v):
@@ -265,8 +184,7 @@ def __show_plots__(y, y_approximation):
         __plot_of_y_y_approximation__(i, j, 'Y-{:d}'.format(k + 1))
 
 
-def process_calculations_for_additive(data, degrees, weights, method, poly_type='chebyshev', find_split_lambdas=False,
-                                      **kwargs):
+def process_calculations(data, degrees, weights, method, poly_type='chebyshev', find_split_lambdas=False, **kwargs):
     eps = CONST_EPS
     if 'epsilon' in kwargs:
         try:
@@ -319,8 +237,7 @@ def process_calculations_for_additive(data, degrees, weights, method, poly_type=
 
 
 def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, y_matrix, b_matrix, dims_x_i,
-                                    polynom_type, eps,
-                                    method, find_split_lambdas):
+                                    polynom_type, eps, method, find_split_lambdas):
     p = np.array(degrees)
 
     a_matrix = __make_a_matrix__(x_normed_matrix, p, polynom_type)
@@ -338,8 +255,7 @@ def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, y
     return {'norm': np.linalg.norm(y_normed_matrix - f, np.inf, axis=1), 'degrees': p, 'f': real_f}
 
 
-def find_best_degrees_for_additive(data, max_degrees, weights, method, poly_type='chebyshev', find_split_lambdas=False,
-                                   **kwargs):
+def find_best_degrees(data, max_degrees, weights, method, poly_type='chebyshev', find_split_lambdas=False, **kwargs):
     results = []
 
     eps = CONST_EPS

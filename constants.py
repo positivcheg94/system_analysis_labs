@@ -2,7 +2,6 @@ import numpy
 
 DEFAULT_FLOAT_TYPE = numpy.float128
 
-CONST_WINDOW_SIZE = 1e-2
 CONST_EPS = 1e-8
 
 CHEBYSHEV = 'chebyshev'
@@ -13,8 +12,6 @@ LAGUERRE = 'laguerre'
 LAGUERRE_SYMBOL = 'L'
 HERMITE = 'hermite'
 HERMITE_SYMBOL = 'H'
-
-NAME = 'temp.xlsx'
 
 DEFAULT_METHOD = 'Least squares'
 

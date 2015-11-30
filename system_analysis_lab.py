@@ -8,7 +8,7 @@ import tkinter.filedialog as file_dialog
 import tkinter.messagebox as message_box
 import pandas
 
-from solver import process_calculations_for_additive, find_best_degrees_for_additive
+from solver_additive import process_calculations as calc_add, find_best_degrees as fbd_add
 from constants import *
 
 CONST_LIMIT = 1000
@@ -383,10 +383,10 @@ class Application:
         method = OPTIMIZATION_METHODS[self._method.get()]
 
         if find_best_degrees:
-            results, self._last_plots = find_best_degrees_for_additive(self._data, degrees, weights, method, polynom,
+            results, self._last_plots = fbd_add(self._data, degrees, weights, method, polynom,
                                                                        find_lambda, epsilon=eps)
         else:
-            results, self._last_plots = process_calculations_for_additive(self._data, degrees, weights, method, polynom,
+            results, self._last_plots = calc_add(self._data, degrees, weights, method, polynom,
                                                                           find_lambda, epsilon=eps)
         self.reset_and_insert_results(results)
         self.__write_to_file__(results)
