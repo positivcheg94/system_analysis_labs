@@ -79,7 +79,8 @@ def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, l
     a_small = make_a_small_matrix(ln_y_add_one, psi_matrix, eps, method, dims_x_i)
     f_i = make_f_i(a_small, psi_matrix, dims_x_i)
     c = make_c_small(ln_y_add_one, f_i, eps, method)
-    f = make_f(f_i, c)
+    f_log = make_f(f_i, c)
+    f = np.exp(f_log) - 1
     f_real = make_real_f(y_scales, f)
 
     return {'norm': np.linalg.norm(y_normed_matrix - f, np.inf, axis=1), 'degrees': p, 'f': f_real}
@@ -119,9 +120,8 @@ def find_best_degrees(data, max_degrees, weights, method, poly_type='chebyshev',
 
     for current_degree in product(*[range(1, i) for i in max_p]):
         pool.apply_async(__calculate_error_for_degrees__, args=(
-            current_degree, x_normed_matrix, y_normed_matrix, ln_y_add_one, y_scales, b_matrix, dims_x_i, polynom_type,
-            eps, method,
-            find_split_lambdas), callback=lambda result: results.append(result))
+        current_degree, x_normed_matrix, y_normed_matrix, ln_y_add_one, y_scales, b_matrix, dims_x_i, polynom_type, eps,
+        method, find_split_lambdas), callback=lambda result: results.append(result))
     pool.close()
     pool.join()
 
