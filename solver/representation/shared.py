@@ -1,16 +1,12 @@
-import numpy as np
-
 from numpy.polynomial import Chebyshev, Legendre, Laguerre, Hermite
-from solver.constants import LEGENDRE, LEGENDRE_SYMBOL, LAGUERRE, LAGUERRE_SYMBOL, HERMITE, HERMITE_SYMBOL, \
+
+from solver.private.constants import LEGENDRE, LEGENDRE_SYMBOL, LAGUERRE, LAGUERRE_SYMBOL, HERMITE, HERMITE_SYMBOL, \
     CHEBYSHEV_SYMBOL
 
-__all__ = ['convert_polynom_to_string', 'convert_special_polynom_to_string', 'polynom_picker', 'DOM']
+__all__ = ['convert_polynom_to_string', 'convert_special_polynom_to_string', 'polynom_picker']
 
-DOM = np.array([0, 1])
 POLYNOM_MASK = '{:e}*{:s}[{:d},{:d}]^{:d}'
 SPECIAL_POLYNOM_MASK = '{:e}*{:s}{:d}[x{:d},{:d}]'
-
-
 
 
 def convert_polynom_to_string(polynom, first, second, symbol='x'):

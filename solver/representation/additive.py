@@ -14,7 +14,7 @@ def __make_psi_polynom__(lambdas, polynom, dims_x_i, p):
         for deg in range(1, degree + 1):
             b = [0] * deg
             b[-1] = 1
-            max_basis.append(polynom(b, domain=DOM, window=DOM))
+            max_basis.append(polynom(b))
         return np.array(max_basis)
 
     basis = __make_basis__(np.max(p))
@@ -57,12 +57,12 @@ def __make_f_polynoms__(f_i_polynoms, c):
 
 
 def __transform_f_to_usual_polynomial_form__(f_polynoms):
-    real_polynom = [[[j.convert(kind=Polynomial, domain=DOM, window=DOM) for j in i] for i in p] for p in f_polynoms]
+    real_polynom = [[[j.convert(kind=Polynomial) for j in i] for i in p] for p in f_polynoms]
     return np.array(real_polynom)
 
 
 def __unshifted_f_polynoms__(f_real_polynoms, x_scales):
-    p_x_0 = Polynomial([0, 1], domain=DOM, window=DOM)
+    p_x_0 = Polynomial([0, 1])
     unshifted_real_polynom = []
     for f_polynom in f_real_polynoms:
         f_i = []
@@ -126,7 +126,7 @@ def __f_general_polynom_representation__(f_real):
     return '\n\n'.join(f_repr)
 
 
-def polynom_representation_add(polynom_type, p, dims_x_i, x_scales, lambdas, a_small, c):
+def representation(polynom_type, p, dims_x_i, x_scales, lambdas, a_small, c):
     polynom, polynom_symbol = polynom_picker(polynom_type)
 
     psi_polynoms = __make_psi_polynom__(lambdas, polynom, dims_x_i, p)

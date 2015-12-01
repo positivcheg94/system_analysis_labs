@@ -4,9 +4,9 @@ from itertools import product
 
 import numpy as np
 
-from solver.constants import DEFAULT_FLOAT_TYPE, CONST_EPS
+from solver.private.constants import DEFAULT_FLOAT_TYPE, CONST_EPS
 from solver.private.shared import *
-from solver.representation.additive import polynom_representation_add
+from solver.representation.additive import representation
 
 __all__ = ['make_model', 'find_best_degrees']
 
@@ -65,7 +65,7 @@ def make_model(data, degrees, weights, method, poly_type='chebyshev', find_split
     error = np.linalg.norm(y_matrix - f_real, np.inf, axis=1)
     error = "normed Y errors - {:s}\nY errors - {:s}".format(str(normed_error), str(error))
 
-    result = polynom_representation_add(polynom_type, p, dims_x_i, x_scales, lambdas, a_small, c)
+    result = representation(polynom_type, p, dims_x_i, x_scales, lambdas, a_small, c)
 
     return "\n\n".join([result, error]), lambda: show_plots(y_matrix, f_real)
 

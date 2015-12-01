@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import special
 
-from solver.constants import DEFAULT_METHOD, CHEBYSHEV, LEGENDRE, LAGUERRE, HERMITE
+from solver.private.constants import DEFAULT_METHOD, CHEBYSHEV, LEGENDRE, LAGUERRE, HERMITE
 from solver.private.minimize import *
 
 __all__ = ['minimize_equation', 'normalize_x_matrix', 'normalize_y_matrix',

@@ -4,14 +4,15 @@ from itertools import product
 
 import numpy as np
 
-from solver.constants import DEFAULT_FLOAT_TYPE, CONST_EPS, CONST_EPS_LOG
+from solver.private.constants import DEFAULT_FLOAT_TYPE, CONST_EPS, CONST_EPS_LOG
 from solver.private.shared import *
+from solver.representation.multiplicative import representation
 
 
 def __make_a_matrix__(x, p, polynom):
     n = len(x[0][0])
     a_matrix = np.array([[np.log(polynom(p_j, j[k]) + 1 + CONST_EPS_LOG) for x_i in range(len(x)) for j in x[x_i] for
-                          p_j in range(1, p[x_i])] for k in range(n)])
+                          p_j in range(p[x_i])] for k in range(n)])
     return a_matrix
 
 
@@ -60,7 +61,7 @@ def make_model(data, degrees, weights, method, poly_type='chebyshev', find_split
     error = np.linalg.norm(y_matrix - f_real, np.inf, axis=1)
     error = "normed Y errors - {:s}\nY errors - {:s}".format(str(normed_error), str(error))
 
-    result = ''
+    result = representation(polynom_type, p, dims_x_i, x_scales, lambdas, a_small, c)
 
     return "\n\n".join([result, error]), lambda: show_plots(y_matrix, f_real)
 
