@@ -1,37 +1,11 @@
+from copy import deepcopy
 from itertools import accumulate
 from operator import add
-from copy import deepcopy
 
 import numpy as np
-from numpy.polynomial import Polynomial, Chebyshev, Legendre, Laguerre, Hermite
+from numpy.polynomial import Polynomial
 
-from ..private.constants import *
-
-DOM = np.array([0, 1])
-POLYNOM_MASK = '{:e}*{:s}[{:d},{:d}]^{:d}'
-SPECIAL_POLYNOM_MASK = '{:e}*{:s}{:d}[x{:d},{:d}]'
-
-
-def __convert_polynom_to_string__(polynom, first, second, symbol='x'):
-    coef = polynom.coef
-    return ' + '.join([POLYNOM_MASK.format(coef[i], symbol, first, second, i) for i in reversed(range(len(coef)))])
-
-
-def __convert_special_polynom_to_string__(polynom, first, second, symbol='C'):
-    coef = polynom.coef
-    return ' + '.join(
-        [SPECIAL_POLYNOM_MASK.format(coef[i], symbol, i, first, second) for i in reversed(range(len(coef)))])
-
-
-def __polynom_picker__(polynom_type):
-    if polynom_type is LEGENDRE:
-        return Legendre, LEGENDRE_SYMBOL
-    elif polynom_type is LAGUERRE:
-        return Laguerre, LAGUERRE_SYMBOL
-    elif polynom_type is HERMITE:
-        return Hermite, HERMITE_SYMBOL
-    else:
-        return Chebyshev, CHEBYSHEV_SYMBOL
+from solver.representation.shared import *
 
 
 def __make_psi_polynom__(lambdas, polynom, dims_x_i, p):
@@ -109,7 +83,7 @@ def __psi_representation__(psi, dims_x_i, symbol):
         for x_i, k in zip(range(len(dims_x_i)), list(accumulate(dims_x_i))):
             for t in range(k - last):
                 psi_repr.append(
-                    'PSI-{:d},{:d} = '.format(x_i + 1, t + 1) + __convert_special_polynom_to_string__(psi[i][last + t],
+                    'PSI-{:d},{:d} = '.format(x_i + 1, t + 1) + convert_special_polynom_to_string(psi[i][last + t],
                                                                                                       x_i + 1, t + 1,
                                                                                                       symbol))
             last = k
@@ -123,7 +97,7 @@ def __f_i_representation__(f_i_polynom, symbol):
         for x_i in range(len(f[i])):
             f_i_j_repr = []
             for x_i_j in range(len(f[i][x_i])):
-                f_i_j_repr.append(__convert_special_polynom_to_string__(f[i][x_i][x_i_j], x_i + 1, x_i_j + 1, symbol))
+                f_i_j_repr.append(convert_special_polynom_to_string(f[i][x_i][x_i_j], x_i + 1, x_i_j + 1, symbol))
             f_i_repr.append('Fi-{:d},{:d} = '.format(x_i + 1, i + 1) + ' + '.join(f_i_j_repr))
     return '\n\n'.join(f_i_repr)
 
@@ -135,7 +109,7 @@ def __f_representation__(f_polynom, symbol):
         f_i_repr = []
         for x_i in range(len(f[i])):
             for x_i_j in range(len(f[i][x_i])):
-                f_i_repr.append(__convert_special_polynom_to_string__(f[i][x_i][x_i_j], x_i + 1, x_i_j + 1, symbol))
+                f_i_repr.append(convert_special_polynom_to_string(f[i][x_i][x_i_j], x_i + 1, x_i_j + 1, symbol))
         f_repr.append('F-{:d} = '.format(i + 1) + ' + '.join(f_i_repr))
     return '\n\n'.join(f_repr)
 
@@ -147,13 +121,13 @@ def __f_general_polynom_representation__(f_real):
         f_i_repr = []
         for x_i in range(len(f[i])):
             for x_i_j in range(len(f[i][x_i])):
-                f_i_repr.append(__convert_polynom_to_string__(f[i][x_i][x_i_j], x_i + 1, x_i_j + 1))
+                f_i_repr.append(convert_polynom_to_string(f[i][x_i][x_i_j], x_i + 1, x_i_j + 1))
         f_repr.append('F-{:d} = '.format(i + 1) + ' + '.join(f_i_repr))
     return '\n\n'.join(f_repr)
 
 
 def polynom_representation_add(polynom_type, p, dims_x_i, x_scales, lambdas, a_small, c):
-    polynom, polynom_symbol = __polynom_picker__(polynom_type)
+    polynom, polynom_symbol = polynom_picker(polynom_type)
 
     psi_polynoms = __make_psi_polynom__(lambdas, polynom, dims_x_i, p)
     f_i_polynoms = __make_f_i_polynoms__(psi_polynoms, a_small, dims_x_i)

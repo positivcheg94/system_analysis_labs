@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import special
 
+from solver.constants import DEFAULT_METHOD, CHEBYSHEV, LEGENDRE, LAGUERRE, HERMITE
 from solver.private.minimize import *
-from .constants import *
 
 __all__ = ['minimize_equation', 'normalize_x_matrix', 'normalize_y_matrix',
            'make_b_matrix', 'get_polynom_function', 'make_lambdas', 'make_split_lambdas',
@@ -155,11 +155,11 @@ def make_f(f_i, c):
     return np.array([np.sum(list(map(mul, i, j)), axis=0) for i, j in zip(f_i, c)])
 
 
-def make_real_f(real_y, f):
+def make_real_f(y_scales, f):
     real_f = []
-    for i, j in zip(real_y, f):
-        i_min, i_max = np.min(i), np.max(i)
-        real_f.append(j * (i_max - i_min) + i_min)
+    for i, j in zip(y_scales, f):
+        shift, zoom = np.min(i), np.max(i)
+        real_f.append(j * zoom + shift)
     return np.array(real_f)
 
 

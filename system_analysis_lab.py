@@ -8,7 +8,7 @@ from os import path
 import pandas
 from constants import *
 from solver.additive import find_best_degrees as fbd_add, make_model as calc_add
-from solver.multiplicative import process_calculations as calc_mul
+from solver.multiplicative import find_best_degrees as fbd_mul, make_model as calc_mul
 
 CONST_LIMIT = 1000
 
@@ -18,12 +18,15 @@ def __validate_only_digits__(S):
 
 
 def __pick_save_file_dialog__(callback=None):
-    picked_file = file_dialog.asksaveasfile().name
+    picked_file = file_dialog.asksaveasfile()
+    if picked_file is None:
+        return None
+    picked_file_name = picked_file.name
     try:
-        callback(picked_file)
+        callback(picked_file_name)
     except:
         print('callack exception occured')
-    return picked_file
+    return picked_file_name
 
 
 def __parse_file__(file):
@@ -35,9 +38,9 @@ def __parse_file__(file):
         tmp_dict[column[:2].lower()].append(data[column].tolist())
 
     for i in sorted(tmp_dict.keys()):
-        if i[0] is 'x':
+        if i[0] == 'x':
             data_dict['x'][i] = tmp_dict[i]
-        elif i[0] is 'y':
+        elif i[0] == 'y':
             data_dict['y'][i] = tmp_dict[i][0]
 
     if len(data_dict['x']) > 3:
@@ -345,14 +348,17 @@ class Application:
             self._vector_y_dimension.config(text='')
 
     def __select_input_file__(self):
-        picked_file = file_dialog.askopenfile().name
+        picked_file = file_dialog.askopenfile()
+        if picked_file is None:
+            return None
+        picked_file_name = picked_file.name
         try:
-            data = __parse_file__(picked_file)
+            data = __parse_file__(picked_file_name)
         except:
             self.__reset_input_file__()
             self.__show_error__('Open File Error', 'Cannot open file. Bad format')
             return
-        self.__set_input_file_name__(picked_file)
+        self.__set_input_file_name__(picked_file_name)
         self.__load_data__(data)
         self.__update_info__()
 
@@ -390,13 +396,23 @@ class Application:
         find_lambda = bool(self._find_lambdas.get())
 
         method = OPTIMIZATION_METHODS[self._method.get()]
+        form = self._form.get()
 
-        if find_best_degrees:
-            results, self._last_plots = fbd_add(self._data, degrees, weights, method, polynom,
-                                                find_lambda, epsilon=eps)
+        if form == 'mul':
+            if find_best_degrees:
+                results, self._last_plots = fbd_mul(self._data, degrees, weights, method, polynom, find_lambda,
+                                                    epsilon=eps)
+            else:
+                results, self._last_plots = calc_mul(self._data, degrees, weights, method, polynom, find_lambda,
+                                                     epsilon=eps)
         else:
-            results, self._last_plots = calc_add(self._data, degrees, weights, method, polynom,
-                                                 find_lambda, epsilon=eps)
+            if find_best_degrees:
+                results, self._last_plots = fbd_add(self._data, degrees, weights, method, polynom, find_lambda,
+                                                    epsilon=eps)
+            else:
+                results, self._last_plots = calc_add(self._data, degrees, weights, method, polynom, find_lambda,
+                                                     epsilon=eps)
+
         self.reset_and_insert_results(results)
         self.__write_to_file__(results)
 

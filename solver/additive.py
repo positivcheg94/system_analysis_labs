@@ -4,9 +4,9 @@ from itertools import product
 
 import numpy as np
 
-from .representation.additive import polynom_representation_add
-from .private.constants import DEFAULT_FLOAT_TYPE, CONST_EPS
-from .private.shared import *
+from solver.constants import DEFAULT_FLOAT_TYPE, CONST_EPS
+from solver.private.shared import *
+from solver.representation.additive import polynom_representation_add
 
 __all__ = ['make_model', 'find_best_degrees']
 
@@ -70,7 +70,7 @@ def make_model(data, degrees, weights, method, poly_type='chebyshev', find_split
     return "\n\n".join([result, error]), lambda: show_plots(y_matrix, f_real)
 
 
-def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, y_matrix, b_matrix, dims_x_i,
+def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, y_scales, b_matrix, dims_x_i,
                                     polynom_type, eps, method, find_split_lambdas):
     p = np.array(degrees)
 
@@ -84,7 +84,7 @@ def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, y
     f_i = make_f_i(a_small, psi_matrix, dims_x_i)
     c = make_c_small(y_normed_matrix, f_i, eps, method)
     f = make_f(f_i, c)
-    f_real = make_real_f(y_matrix, f)
+    f_real = make_real_f(y_scales, f)
 
     return {'norm': np.linalg.norm(y_normed_matrix - f, np.inf, axis=1), 'degrees': p, 'f': f_real}
 
@@ -121,7 +121,7 @@ def find_best_degrees(data, max_degrees, weights, method, poly_type='chebyshev',
 
     for current_degree in product(*[range(1, i) for i in max_p]):
         pool.apply_async(__calculate_error_for_degrees__, args=(
-            current_degree, x_normed_matrix, y_normed_matrix, y_matrix, b_matrix, dims_x_i, polynom_type, eps, method,
+            current_degree, x_normed_matrix, y_normed_matrix, y_scales, b_matrix, dims_x_i, polynom_type, eps, method,
             find_split_lambdas), callback=lambda result: results.append(result))
     pool.close()
     pool.join()

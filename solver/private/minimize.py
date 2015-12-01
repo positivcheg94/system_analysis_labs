@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize_scalar
 from scipy.linalg import lstsq
-from constants import *
 
 __all__ = ['coord_descent', 'gauss_seidel', 'jacobi', 'conjugate_gradient', 'least_squares']
 
@@ -70,7 +69,7 @@ def jacobi(a_matrix, b_vector, eps):
 
 def conjugate_gradient(a_matrix, b, eps):
     n = len(a_matrix)
-    x = x_last = np.zeros(n, dtype=DEFAULT_FLOAT_TYPE)
+    x = x_last = np.zeros(n)
     z_last = r_last = b - a_matrix.dot(x_last)
     i = 0
     b_norm = np.linalg.norm(b)
