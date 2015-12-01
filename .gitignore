@@ -1,4 +1,6 @@
 .git/*
+__pycache__/
+*.py[cod]
 .idea/*
 *.txt
 *.xlsx

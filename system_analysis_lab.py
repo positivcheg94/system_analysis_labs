@@ -1,15 +1,14 @@
 #!/usr/bin/python
 
-from os import path
-from collections import defaultdict
-
 import tkinter as tk
 import tkinter.filedialog as file_dialog
 import tkinter.messagebox as message_box
+from collections import defaultdict
+from os import path
 import pandas
-
-from solver_additive import process_calculations as calc_add, find_best_degrees as fbd_add
 from constants import *
+from solver.additive import find_best_degrees as fbd_add, make_model as calc_add
+from solver.multiplicative import process_calculations as calc_mul
 
 CONST_LIMIT = 1000
 
@@ -55,7 +54,7 @@ class Application:
 
     def __init__(self, root=tk.Tk()):
         self._main_window = root
-        self._main_window.title('System analysis lab2')
+        self._main_window.title('System analysis')
         self._validator = self._main_window.register(__validate_only_digits__)
         self.__init_widgets__()
         # self.set_size(600,480)
@@ -74,6 +73,9 @@ class Application:
         self._method = tk.StringVar()
         self._method.set(DEFAULT_METHOD)
 
+        self._form = tk.StringVar()
+        self._form.set(DEFAULT_FORM)
+
         self._polynom_var = tk.IntVar()
         self._polynom_var.set(1)
 
@@ -81,7 +83,7 @@ class Application:
         self._weights.set(1)
 
         self._find_lambdas = tk.IntVar()
-        self._find_lambdas.set(0)
+        self._find_lambdas.set(1)
 
         self._find_best_degree = tk.IntVar()
         self._find_best_degree.set(0)
@@ -244,7 +246,7 @@ class Application:
         self._additional_frame = tk.Frame(self._global_additional_frame, relief='groove', borderwidth=2)
         tk.Label(self._additional_frame, text='Additional options').pack(fill='x')
         #                #weights frame
-        self._weights_frame = tk.Frame(self._additional_frame)
+        self._weights_frame = tk.Frame(self._additional_frame, relief='groove', borderwidth=2)
         tk.Radiobutton(self._weights_frame, text="Average", variable=self._weights, value=1).pack(fill='x')
         tk.Radiobutton(self._weights_frame, text="Min and Max", variable=self._weights, value=2).pack(fill='x')
         self._weights_frame.pack(fill='x')
@@ -260,13 +262,20 @@ class Application:
         self._pick_epsilon_edit.pack(side='right')
         self._pick_epsilon_frame.pack(anchor='n')
         #                #! pick epsilon
-        #                # pick epsilon
-        self._pick_method_frame = tk.Frame(self._additional_frame)
+        #                # pick method
+        self._pick_method_frame = tk.Frame(self._additional_frame, relief='groove', borderwidth=2)
         tk.Label(self._pick_method_frame, text='Optimization method').pack(side='left')
         self._pick_method = tk.OptionMenu(self._pick_method_frame, self._method, *tuple(OPTIMIZATION_METHODS))
         self._pick_method.pack(side='right')
         self._pick_method_frame.pack(anchor='n')
-        #                # pick epsilon
+        #                # pick method
+        #                # pick form
+        self._pick_form_frame = tk.Frame(self._additional_frame, relief='groove', borderwidth=2)
+        tk.Label(self._pick_form_frame, text='Form').pack(side='left')
+        self._pick_form = tk.OptionMenu(self._pick_form_frame, self._form, *tuple(FORMS))
+        self._pick_form.pack(side='right')
+        self._pick_form_frame.pack(anchor='n')
+        #                # pick form
         self._additional_frame.pack(fill='x')
         #        #!global additional frame
         self._global_additional_frame.pack(side='left', fill='x')
@@ -384,10 +393,10 @@ class Application:
 
         if find_best_degrees:
             results, self._last_plots = fbd_add(self._data, degrees, weights, method, polynom,
-                                                                       find_lambda, epsilon=eps)
+                                                find_lambda, epsilon=eps)
         else:
             results, self._last_plots = calc_add(self._data, degrees, weights, method, polynom,
-                                                                          find_lambda, epsilon=eps)
+                                                 find_lambda, epsilon=eps)
         self.reset_and_insert_results(results)
         self.__write_to_file__(results)
 

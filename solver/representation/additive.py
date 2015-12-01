@@ -1,9 +1,11 @@
 from itertools import accumulate
 from operator import add
 from copy import deepcopy
+
 import numpy as np
 from numpy.polynomial import Polynomial, Chebyshev, Legendre, Laguerre, Hermite
-from constants import *
+
+from ..private.constants import *
 
 DOM = np.array([0, 1])
 POLYNOM_MASK = '{:e}*{:s}[{:d},{:d}]^{:d}'
