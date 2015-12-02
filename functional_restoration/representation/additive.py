@@ -174,4 +174,4 @@ def representation(polynom_type, p, dims_x_i, x_scales, y_scales, lambdas, a_sma
         [psi_representation, f_i_representation, f_representation, 'General form\n' + f_real_representation,
          'Unshifted form\n' + unshifted_f_representation])
 
-    return unshifted_f, text_representation
+    return f_real, text_representation

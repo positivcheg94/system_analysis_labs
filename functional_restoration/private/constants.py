@@ -17,4 +17,4 @@ HERMITE_SYMBOL = 'H'
 
 DEFAULT_METHOD = 'lstsq'
 
-DOM = np.array([0,1])
+DOM = np.array([-1, 1])

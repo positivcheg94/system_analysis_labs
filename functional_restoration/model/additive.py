@@ -123,14 +123,14 @@ class Additive:
         text = '\n\n'.join([error_text, result_text])
 
         """
-        strange stuff
+        #strange stuff
         n = len(x_normed_matrix[0][0])
         y_y = []
         for q in range(n):
             sum = 0
             for i in range(len(f_polynoms[0])):
                 for j in range(len(f_polynoms[0][i])):
-                    sum += f_polynoms[0][i][j](x_matrix[i][j][q])
+                    sum += f_polynoms[0][i][j](x_normed_matrix[i][j][q])
             y_y.append(sum)
         y_y = np.array(y_y)
         plt.plot(y_normed_matrix[0], 'r')
@@ -212,9 +212,9 @@ class AdditiveDegreeFinder:
             br = {'norm': res['norm'][i], 'degrees': res['degrees'], 'f': res['f'][i]}
             best_results.append(br)
 
-        f_real = [[br['f'] for br in best_results]]
-        degrees = [[br['degrees'] for br in best_results]]
-        normed_error = [[br['norm'] for br in best_results]]
+        f_real = [br['f'] for br in best_results]
+        degrees = [br['degrees'] for br in best_results]
+        normed_error = [br['norm'] for br in best_results]
 
         text_result = '\n'.join('Best degrees for Y{} are {} with normed error - {}'.format(i + 1,
                                                                                             convert_degrees_to_string(
