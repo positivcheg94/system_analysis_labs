@@ -59,7 +59,7 @@ def make_model(data, degrees, weights, method, poly_type='chebyshev', find_split
 
     c = make_c_small(y_normed_matrix, f_i, eps, method)
     f = make_f(f_i, c)
-    f_real = make_real_f(y_matrix, f)
+    f_real = make_real_f(y_scales, f)
 
     normed_error = np.linalg.norm(y_normed_matrix - f, np.inf, axis=1)
     error = np.linalg.norm(y_matrix - f_real, np.inf, axis=1)
