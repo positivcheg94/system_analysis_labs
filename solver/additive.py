@@ -11,7 +11,7 @@ from solver.representation.additive import representation
 __all__ = ['make_model', 'find_best_degrees']
 
 
-def __make_a_matrix__(x, p, polynom):
+def make_a_matrix(x, p, polynom):
     n = len(x[0][0])
     a_matrix = np.array(
         [[polynom(p_j, j[k]) for x_i in range(len(x)) for j in x[x_i] for p_j in range(p[x_i])] for k in range(n)])
@@ -44,7 +44,7 @@ def make_model(data, degrees, weights, method, poly_type='chebyshev', find_split
 
     b_matrix = make_b_matrix(y_normed_matrix, weights)
 
-    a_matrix = __make_a_matrix__(x_normed_matrix, p, polynom_type)
+    a_matrix = make_a_matrix(x_normed_matrix, p, polynom_type)
 
     if find_split_lambdas:
         lambdas = make_split_lambdas(a_matrix, b_matrix, eps, method, dims_x_i, p)
@@ -74,7 +74,7 @@ def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, y
                                     polynom_type, eps, method, find_split_lambdas):
     p = np.array(degrees)
 
-    a_matrix = __make_a_matrix__(x_normed_matrix, p, polynom_type)
+    a_matrix = make_a_matrix(x_normed_matrix, p, polynom_type)
     if find_split_lambdas:
         lambdas = make_split_lambdas(a_matrix, b_matrix, eps, method, dims_x_i, p)
     else:

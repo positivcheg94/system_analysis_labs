@@ -8,8 +8,10 @@ from solver.private.constants import DEFAULT_FLOAT_TYPE, CONST_EPS, CONST_EPS_LO
 from solver.private.shared import *
 from solver.representation.multiplicative import representation
 
+__all__ = ['make_model', 'find_best_degrees']
 
-def __make_a_matrix__(x, p, polynom):
+
+def make_a_matrix(x, p, polynom):
     n = len(x[0][0])
     a_matrix = np.array([[np.log(polynom(p_j, j[k]) + 1 + CONST_EPS_LOG) for x_i in range(len(x)) for j in x[x_i] for
                           p_j in range(p[x_i])] for k in range(n)])
@@ -43,7 +45,7 @@ def make_model(data, degrees, weights, method, poly_type='chebyshev', find_split
     polynom_type = get_polynom_function(poly_type)
 
     b_matrix = make_b_matrix(ln_y_add_one, weights)
-    a_matrix = __make_a_matrix__(x_normed_matrix, p, polynom_type)
+    a_matrix = make_a_matrix(x_normed_matrix, p, polynom_type)
     if find_split_lambdas:
         lambdas = make_split_lambdas(a_matrix, b_matrix, eps, method, dims_x_i, p)
     else:
@@ -71,7 +73,7 @@ def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, l
                                     polynom_type, eps, method, find_split_lambdas):
     p = np.array(degrees)
 
-    a_matrix = __make_a_matrix__(x_normed_matrix, p, polynom_type)
+    a_matrix = make_a_matrix(x_normed_matrix, p, polynom_type)
     if find_split_lambdas:
         lambdas = make_split_lambdas(a_matrix, b_matrix, eps, method, dims_x_i, p)
     else:
@@ -121,8 +123,9 @@ def find_best_degrees(data, max_degrees, weights, method, poly_type='chebyshev',
 
     for current_degree in product(*[range(1, i) for i in max_p]):
         pool.apply_async(__calculate_error_for_degrees__, args=(
-        current_degree, x_normed_matrix, y_normed_matrix, ln_y_add_one, y_scales, b_matrix, dims_x_i, polynom_type, eps,
-        method, find_split_lambdas), callback=lambda result: results.append(result))
+            current_degree, x_normed_matrix, y_normed_matrix, ln_y_add_one, y_scales, b_matrix, dims_x_i, polynom_type,
+            eps,
+            method, find_split_lambdas), callback=lambda result: results.append(result))
     pool.close()
     pool.join()
 
