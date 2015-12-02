@@ -4,9 +4,9 @@ from itertools import product
 
 import numpy as np
 
-from solver.private.constants import DEFAULT_FLOAT_TYPE, CONST_EPS, CONST_EPS_LOG
-from solver.private.shared import *
-from solver.representation.multiplicative import representation
+from functional_restoration.private.constants import DEFAULT_FLOAT_TYPE, CONST_EPS, CONST_EPS_LOG
+from functional_restoration.private.shared import *
+from functional_restoration.representation.multiplicative import representation
 
 __all__ = ['make_model', 'find_best_degrees']
 

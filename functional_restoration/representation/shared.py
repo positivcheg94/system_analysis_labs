@@ -1,6 +1,6 @@
 from numpy.polynomial import Chebyshev, Legendre, Laguerre, Hermite
 
-from solver.private.constants import LEGENDRE, LEGENDRE_SYMBOL, LAGUERRE, LAGUERRE_SYMBOL, HERMITE, HERMITE_SYMBOL, \
+from functional_restoration.private.constants import LEGENDRE, LEGENDRE_SYMBOL, LAGUERRE, LAGUERRE_SYMBOL, HERMITE, HERMITE_SYMBOL, \
     CHEBYSHEV_SYMBOL
 
 __all__ = ['convert_polynom_to_string', 'convert_special_polynom_to_string', 'polynom_picker']

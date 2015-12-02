@@ -1,12 +1,11 @@
 from itertools import accumulate, chain
 from operator import add, mul
-
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import special
-
-from solver.private.constants import DEFAULT_METHOD, CHEBYSHEV, LEGENDRE, LAGUERRE, HERMITE
-from solver.private.minimize import *
+from functional_restoration.private.constants import DEFAULT_METHOD, DEFAULT_FLOAT_TYPE, CHEBYSHEV, LEGENDRE, LAGUERRE, \
+    HERMITE
+from functional_restoration.private.minimize import *
 
 __all__ = ['minimize_equation', 'normalize_x_matrix', 'normalize_y_matrix',
            'make_b_matrix', 'get_polynom_function', 'make_lambdas', 'make_split_lambdas',
@@ -55,7 +54,7 @@ def normalize_y_matrix(y_matrix):
         current_normed_vector, current_scales = normalize_vector(y_i)
         y_normed.append(current_normed_vector)
         y_scales.append(current_scales)
-    return np.vstack(y_normed), np.vstack(y_scales).astype(np.float64)
+    return np.vstack(y_normed), np.vstack(y_scales).astype(DEFAULT_FLOAT_TYPE)
 
 
 def make_b_matrix(y_matrix, weights):
@@ -68,15 +67,15 @@ def make_b_matrix(y_matrix, weights):
 
 def get_polynom_function(poly_type):
     if poly_type is CHEBYSHEV:
-        return special.eval_sh_chebyt
+        return special.eval_chebyt
     elif poly_type is LEGENDRE:
-        return special.eval_sh_legendre
+        return special.eval_legendre
     elif poly_type is LAGUERRE:
         return special.eval_laguerre
     elif poly_type is HERMITE:
         return special.eval_hermite
     else:
-        return special.eval_sh_chebyt
+        return special.eval_chebyt
 
 
 def make_lambdas(a_matrix, b_matrix, eps, method):

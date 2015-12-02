@@ -1,6 +1,7 @@
-from numpy import float64, float128
+import numpy as np
+from numpy import float64, float128, float
 
-DEFAULT_FLOAT_TYPE = float128
+DEFAULT_FLOAT_TYPE = float
 
 CONST_EPS = 1e-8
 CONST_EPS_LOG = 1e-10
@@ -15,3 +16,5 @@ HERMITE = 'hermite'
 HERMITE_SYMBOL = 'H'
 
 DEFAULT_METHOD = 'lstsq'
+
+DOM = np.array([0,1])

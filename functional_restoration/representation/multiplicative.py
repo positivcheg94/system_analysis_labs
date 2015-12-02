@@ -1,9 +1,10 @@
-from copy import deepcopy
 from itertools import accumulate
 from operator import add
+
 import numpy as np
 from numpy.polynomial import Polynomial
-from solver.representation.shared import *
+
+from functional_restoration.representation.shared import *
 
 
 def make_basis(polynom, degree):

@@ -7,8 +7,8 @@ from collections import defaultdict
 from os import path
 import pandas
 from constants import *
-from solver.additive import find_best_degrees as fbd_add, make_model as calc_add
-from solver.multiplicative import find_best_degrees as fbd_mul, make_model as calc_mul
+from functional_restoration.multiplicative import find_best_degrees as fbd_mul, make_model as calc_mul
+from functional_restoration.model.additive import Additive, AdditiveDegreeFinder
 
 CONST_LIMIT = 1000
 
@@ -407,11 +407,15 @@ class Application:
                                                      epsilon=eps)
         else:
             if find_best_degrees:
-                results, self._last_plots = fbd_add(self._data, degrees, weights, method, polynom, find_lambda,
-                                                    epsilon=eps)
+                model = AdditiveDegreeFinder(degrees, weights, method, polynom, find_lambda)
+                res = model.fit(self._data)
+                results = res.text()
+                self._last_plots = res.plot
             else:
-                results, self._last_plots = calc_add(self._data, degrees, weights, method, polynom, find_lambda,
-                                                     epsilon=eps)
+                model = Additive(degrees, weights, method, polynom, find_lambda)
+                res = model.fit(self._data)
+                results = res.text()
+                self._last_plots = res.plot
 
         self.reset_and_insert_results(results)
         self.__write_to_file__(results)
