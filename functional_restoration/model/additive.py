@@ -5,7 +5,6 @@ import numpy as np
 from functional_restoration.private.constants import DEFAULT_FLOAT_TYPE, CONST_EPS
 from functional_restoration.private.shared import *
 from functional_restoration.representation.additive import representation
-import matplotlib.pyplot as plt
 
 
 def make_a_matrix(x, p, polynom):
@@ -36,10 +35,14 @@ def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, y
 
 
 class AdditiveResult:
-    def __init__(self, dims_x_i, y_matrix, f_real, lambdas, a_small, c, normed_error, text_result):
+    def __init__(self, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small, c, normed_error,
+                 text_result):
         self._dims_x_i = dims_x_i
+        self._x_scales = x_scales
+        self._y_scales = y_scales
         self._y_matrix = y_matrix
         self._f_real = f_real
+        self._f_polynoms = f_polynoms
         self._lambdas = lambdas
         self._a_small = a_small
         self._c = c
@@ -66,6 +69,27 @@ class AdditiveResult:
 
     def plot(self):
         return show_plots(self._y_matrix, self._f_real)
+
+    def predict(self, x_matrix):
+        n = len(x_matrix[0][0])
+        y = []
+        for i in range(len(self._f_polynoms)):
+            y_i = []
+            for q in range(n):
+                sum_val = 0
+                for first in range(len(self._f_polynoms[i])):
+                    for second in range(len(self._f_polynoms[i][first])):
+                        value = (self._f_polynoms[i][first][second])(x_matrix[first][second][q])
+                        sum_val += value
+                y_i.append(sum_val)
+            y.append(y_i)
+        y = np.array(y)
+
+        for i, scales in zip(range(len(y)), self._y_scales):
+            shift, zoom = scales
+            y[i] = y[i] * zoom - shift
+
+        return y
 
 
 class Additive:
@@ -122,23 +146,8 @@ class Additive:
 
         text = '\n\n'.join([error_text, result_text])
 
-        """
-        #strange stuff
-        n = len(x_normed_matrix[0][0])
-        y_y = []
-        for q in range(n):
-            sum = 0
-            for i in range(len(f_polynoms[0])):
-                for j in range(len(f_polynoms[0][i])):
-                    sum += f_polynoms[0][i][j](x_normed_matrix[i][j][q])
-            y_y.append(sum)
-        y_y = np.array(y_y)
-        plt.plot(y_normed_matrix[0], 'r')
-        plt.plot(y_y, 'b')
-        plt.show()
-        """
-
-        return AdditiveResult(dims_x_i, y_matrix, f_real, lambdas, a_small, c, normed_error, text)
+        return AdditiveResult(dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small, c,
+                              normed_error, text)
 
 
 class AdditiveDegreeFinderResult:
