@@ -19,7 +19,7 @@ def make_basis(polynom, degree):
 def make_psi_i_j(lambdas, basis, shift, zoom, i, j, symbol='x'):
     real_basis = [i((Polynomial([0, 1]) - shift) / zoom) for i in basis]
     return 'PSI[{},{}] = {} - 1'.format(i, j, ' * '.join(
-        ['( {} )^( {} )'.format(convert_polynom_to_string(real_b, i, j), lambd) for real_b, lambd in
+        ['( {} )^( {} )'.format(convert_polynom_to_string(real_b, i, j, symbol), lambd) for real_b, lambd in
          zip(real_basis, lambdas)]))
 
 
@@ -58,8 +58,8 @@ def make_f_i(a_small, dims_x_i):
 def make_f(c):
     f_i = []
     for i in range(len(c)):
-        tmp = ' * '.join(['( 1 + F[{},{}] )^( {} )'.format(i+1,j+1, c[i][j]) for j in range(len(c[i]))])
-        f_i.append('F[{}] = {} - 1'.format(i+1,tmp))
+        tmp = ' * '.join(['( 1 + F[{},{}] )^( {} )'.format(i + 1, j + 1, c[i][j]) for j in range(len(c[i]))])
+        f_i.append('F[{}] = {} - 1'.format(i + 1, tmp))
     return '\n\n'.join(f_i)
 
 
@@ -70,4 +70,4 @@ def representation(polynom_type, p, dims_x_i, x_scales, lambdas, a_small, c):
     f_i = make_f_i(a_small, dims_x_i)
     f = make_f(c)
 
-    return '\n\n'.join([psi,f_i, f])
+    return '\n\n'.join([psi, f_i, f])

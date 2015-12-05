@@ -4,11 +4,13 @@ import tkinter as tk
 import tkinter.filedialog as file_dialog
 import tkinter.messagebox as message_box
 from collections import defaultdict
+
 from os import path
 import pandas
+
 from constants import *
-from functional_restoration.multiplicative import find_best_degrees as fbd_mul, make_model as calc_mul
 from functional_restoration.model.additive import Additive, AdditiveDegreeFinder
+from functional_restoration.model.multiplicative import Multiplicative, MultiplicativeDegreeFinder
 
 CONST_LIMIT = 1000
 
@@ -400,11 +402,15 @@ class Application:
 
         if form == 'mul':
             if find_best_degrees:
-                results, self._last_plots = fbd_mul(self._data, degrees, weights, method, polynom, find_lambda,
-                                                    epsilon=eps)
+                model = MultiplicativeDegreeFinder(degrees, weights, method, polynom, find_lambda)
+                res = model.fit(self._data)
+                results = res.text()
+                self._last_plots = res.plot
             else:
-                results, self._last_plots = calc_mul(self._data, degrees, weights, method, polynom, find_lambda,
-                                                     epsilon=eps)
+                model = Multiplicative(degrees, weights, method, polynom, find_lambda)
+                res = model.fit(self._data)
+                results = res.text()
+                self._last_plots = res.plot
         else:
             if find_best_degrees:
                 model = AdditiveDegreeFinder(degrees, weights, method, polynom, find_lambda)

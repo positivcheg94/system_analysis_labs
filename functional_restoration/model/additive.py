@@ -1,7 +1,9 @@
 from copy import deepcopy
 from itertools import product
 import multiprocessing as mp
+
 import numpy as np
+
 from functional_restoration.private.constants import DEFAULT_FLOAT_TYPE, CONST_EPS
 from functional_restoration.private.shared import *
 from functional_restoration.representation.additive import representation
@@ -87,7 +89,7 @@ class AdditiveResult:
 
         for i, scales in zip(range(len(y)), self._y_scales):
             shift, zoom = scales
-            y[i] = y[i] * zoom - shift
+            y[i] = y[i] * zoom + shift
 
         return y
 
@@ -141,8 +143,7 @@ class Additive:
 
         error_text = "normed Y errors - {:s}\nY errors - {:s}".format(str(normed_error), str(error))
 
-        f_polynoms, result_text = representation(self._polynom_type, self._p, dims_x_i, x_scales, y_scales, lambdas,
-                                                 a_small, c)
+        f_polynoms, result_text = representation(self._polynom_type, self._p, dims_x_i, x_scales, lambdas, a_small, c)
 
         text = '\n\n'.join([error_text, result_text])
 

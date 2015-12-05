@@ -1,8 +1,10 @@
 from itertools import accumulate, chain
 from operator import add, mul
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import special
+
 from functional_restoration.private.constants import DEFAULT_METHOD, DEFAULT_FLOAT_TYPE, CHEBYSHEV, LEGENDRE, LAGUERRE, \
     HERMITE
 from functional_restoration.private.minimize import *
