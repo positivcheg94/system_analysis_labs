@@ -7,15 +7,6 @@ from numpy.polynomial import Polynomial
 from functional_restoration.representation.shared import *
 
 
-def make_basis(polynom, degree):
-    max_basis = []
-    for deg in range(1, degree + 1):
-        b = [0] * deg
-        b[-1] = 1
-        max_basis.append(polynom(b))
-    return np.array(max_basis)
-
-
 def make_psi_i_j(lambdas, basis, shift, zoom, i, j, symbol='x'):
     real_basis = [i((Polynomial([0, 1]) - shift) / zoom) for i in basis]
     return 'PSI[{},{}] = {} - 1'.format(i, j, ' * '.join(
@@ -63,6 +54,24 @@ def make_f(c):
     return '\n\n'.join(f_i)
 
 
+def make_distributed_lambdas(dims_x_i, p, lambdas):
+    stages = np.roll(list(accumulate(dims_x_i * p, func=add)), 1)
+    stages[0] = 0
+
+    dist_lambdas = []
+    for q in range(len(lambdas)):
+        dist_lambdas_i = []
+        for i in range(len(stages)):
+            dist_lambdas_i_j = []
+            for j in range(dims_x_i[i]):
+                start = stages[i] + j * p[i]
+                end = start + p[i]
+                dist_lambdas_i_j.append(lambdas[q][start:end])
+            dist_lambdas_i.append(dist_lambdas_i_j)
+        dist_lambdas.append(dist_lambdas_i)
+    return dist_lambdas
+
+
 def representation(polynom_type, p, dims_x_i, x_scales, lambdas, a_small, c):
     polynom, polynom_symbol = polynom_picker(polynom_type)
 
@@ -70,4 +79,7 @@ def representation(polynom_type, p, dims_x_i, x_scales, lambdas, a_small, c):
     f_i = make_f_i(a_small, dims_x_i)
     f = make_f(c)
 
-    return '\n\n'.join([psi, f_i, f])
+    dist_lambdas = make_distributed_lambdas(dims_x_i, p, lambdas)
+    text = '\n\n'.join([psi, f_i, f])
+
+    return (dist_lambdas, np.max(p)), text

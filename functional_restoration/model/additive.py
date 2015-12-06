@@ -6,6 +6,7 @@ import numpy as np
 
 from functional_restoration.private.constants import DEFAULT_FLOAT_TYPE, CONST_EPS
 from functional_restoration.private.shared import *
+from functional_restoration.representation.shared import polynom_picker
 from functional_restoration.representation.additive import representation
 
 
@@ -37,8 +38,9 @@ def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, y
 
 
 class AdditiveResult:
-    def __init__(self, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small, c, normed_error,
+    def __init__(self, polynom_type, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small, c, normed_error,
                  text_result):
+        self._polynom_type = polynom_type
         self._dims_x_i = dims_x_i
         self._x_scales = x_scales
         self._y_scales = y_scales
@@ -75,13 +77,16 @@ class AdditiveResult:
     def predict(self, x_matrix):
         n = len(x_matrix[0][0])
         y = []
+
+        x_normed_matrix = [[(x_matrix[i][j]-self._x_scales[i][j][0])/self._x_scales[i][j][1] for j in range(len(x_matrix[i]))] for i in range(len(x_matrix))]
+
         for i in range(len(self._f_polynoms)):
             y_i = []
             for q in range(n):
                 sum_val = 0
                 for first in range(len(self._f_polynoms[i])):
                     for second in range(len(self._f_polynoms[i][first])):
-                        value = (self._f_polynoms[i][first][second])(x_matrix[first][second][q])
+                        value = (self._f_polynoms[i][first][second])(x_normed_matrix[first][second][q])
                         sum_val += value
                 y_i.append(sum_val)
             y.append(y_i)
@@ -112,6 +117,8 @@ class Additive:
         self._advanced_text_results = advanced_text_results
 
     def fit(self, data):
+        poly_type, _ = polynom_picker(self._polynom_type)
+
         x = deepcopy(data['x'])
         y = deepcopy(data['y'])
 
@@ -147,8 +154,7 @@ class Additive:
 
         text = '\n\n'.join([error_text, result_text])
 
-        return AdditiveResult(dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small, c,
-                              normed_error, text)
+        return AdditiveResult(poly_type, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small, c, normed_error, text)
 
 
 class AdditiveDegreeFinderResult:

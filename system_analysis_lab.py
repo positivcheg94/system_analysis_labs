@@ -11,6 +11,7 @@ import pandas
 from constants import *
 from functional_restoration.model.additive import Additive, AdditiveDegreeFinder
 from functional_restoration.model.multiplicative import Multiplicative, MultiplicativeDegreeFinder
+from functional_restoration.model.multiplicative_additive import MulAdd
 
 CONST_LIMIT = 1000
 
@@ -402,24 +403,24 @@ class Application:
 
         if form == 'mul':
             if find_best_degrees:
-                model = MultiplicativeDegreeFinder(degrees, weights, method, polynom, find_lambda)
-                res = model.fit(self._data)
+                res = MultiplicativeDegreeFinder(degrees, weights, method, polynom, find_lambda).fit(self._data)
                 results = res.text()
                 self._last_plots = res.plot
             else:
-                model = Multiplicative(degrees, weights, method, polynom, find_lambda)
-                res = model.fit(self._data)
+                res = Multiplicative(degrees, weights, method, polynom, find_lambda).fit(self._data)
                 results = res.text()
                 self._last_plots = res.plot
+        elif form == 'mul-add':
+            res = MulAdd(degrees, weights, method, polynom, find_lambda).fit(self._data)
+            results = ''
+            self._last_plots = res.plot
         else:
             if find_best_degrees:
-                model = AdditiveDegreeFinder(degrees, weights, method, polynom, find_lambda)
-                res = model.fit(self._data)
+                res = AdditiveDegreeFinder(degrees, weights, method, polynom, find_lambda).fit(self._data)
                 results = res.text()
                 self._last_plots = res.plot
             else:
-                model = Additive(degrees, weights, method, polynom, find_lambda)
-                res = model.fit(self._data)
+                res = Additive(degrees, weights, method, polynom, find_lambda).fit(self._data)
                 results = res.text()
                 self._last_plots = res.plot
 

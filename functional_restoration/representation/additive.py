@@ -8,16 +8,8 @@ from functional_restoration.representation.shared import *
 from functional_restoration.private.constants import DOM
 
 
-def __make_psi_polynom__(lambdas, polynom, dims_x_i, p):
-    def __make_basis__(degree):
-        max_basis = []
-        for deg in range(1, degree + 1):
-            b = np.zeros(deg)
-            b[-1] = 1
-            max_basis.append(polynom(b))
-        return np.array(max_basis)
-
-    basis = __make_basis__(np.max(p))
+def make_psi_polynom(lambdas, polynom, dims_x_i, p):
+    basis = make_basis(polynom, np.max(p))
 
     stages = np.roll(list(accumulate(dims_x_i * p, func=add)), 1)
     stages[0] = 0
@@ -36,7 +28,7 @@ def __make_psi_polynom__(lambdas, polynom, dims_x_i, p):
     return np.array(psi_polynoms)
 
 
-def __make_f_i_polynoms__(psi_polynoms, a_small):
+def make_f_i_polynoms(psi_polynoms, a_small):
     f_i = []
     for i in range(len(psi_polynoms)):
         f_i_j_groups = []
@@ -46,7 +38,7 @@ def __make_f_i_polynoms__(psi_polynoms, a_small):
     return np.array(f_i)
 
 
-def __make_f_polynoms__(f_i_polynoms, c):
+def make_f_polynoms(f_i_polynoms, c):
     f_polynoms = []
     for i in range(len(f_i_polynoms)):
         f_i = []
@@ -56,14 +48,14 @@ def __make_f_polynoms__(f_i_polynoms, c):
     return np.array(f_polynoms)
 
 
-def __transform_f_to_usual_polynomial_form__(f_polynoms):
+def transform_f_to_usual_polynomial_form(f_polynoms):
     real_polynom = [[[j.convert(kind=Polynomial, domain=DOM, window=DOM) for j in i] for i in p] for p in f_polynoms]
     return np.array(real_polynom)
 
 
-def __unshifted_f_polynoms__(f_real_polynoms, x_scales):
+def make_unshifted_f_real_polynoms(f_real_polynoms, x_scales):
     p_x_0 = Polynomial([0, 1])
-    unshifted_real_polynom = []
+    unshifted_f_real_polynom = []
     for q in range(len(f_real_polynoms)):
         f_i = []
         for i in range(len(f_real_polynoms[q])):
@@ -72,8 +64,8 @@ def __unshifted_f_polynoms__(f_real_polynoms, x_scales):
                 x_shift, x_zoom = x_scales[i][j]
                 f_i_g.append(f_real_polynoms[q][i][j]((p_x_0 - x_shift) / x_zoom))
             f_i.append(f_i_g)
-        unshifted_real_polynom.append(f_i)
-    return np.array(unshifted_real_polynom)
+        unshifted_f_real_polynom.append(f_i)
+    return np.array(unshifted_f_real_polynom)
 
 
 def __psi_representation__(psi, symbol):
@@ -125,20 +117,20 @@ def __f_general_polynom_representation__(f_real):
 def representation(polynom_type, p, dims_x_i, x_scales, lambdas, a_small, c):
     polynom, polynom_symbol = polynom_picker(polynom_type)
 
-    psi_polynoms = __make_psi_polynom__(lambdas, polynom, dims_x_i, p)
-    f_i_polynoms = __make_f_i_polynoms__(psi_polynoms, a_small)
-    f_polynoms = __make_f_polynoms__(f_i_polynoms, c)
-    f_real = __transform_f_to_usual_polynomial_form__(f_polynoms)
-    unshifted_f = __unshifted_f_polynoms__(f_real, x_scales)
+    psi_polynoms = make_psi_polynom(lambdas, polynom, dims_x_i, p)
+    f_i_polynoms = make_f_i_polynoms(psi_polynoms, a_small)
+    f_polynoms = make_f_polynoms(f_i_polynoms, c)
+    f_real = transform_f_to_usual_polynomial_form(f_polynoms)
+    unshifted_f_real = make_unshifted_f_real_polynoms(f_real, x_scales)
 
     psi_representation = __psi_representation__(psi_polynoms, polynom_symbol)
     f_i_representation = __f_i_representation__(f_i_polynoms, polynom_symbol)
     f_representation = __f_representation__(f_polynoms, polynom_symbol)
     f_real_representation = __f_general_polynom_representation__(f_real)
-    unshifted_f_representation = __f_general_polynom_representation__(unshifted_f)
+    unshifted_f_real_representation = __f_general_polynom_representation__(unshifted_f_real)
 
     text_representation = '\n\n\n\n'.join(
         [psi_representation, f_i_representation, f_representation, 'General form\n' + f_real_representation,
-         'Unshifted form\n' + unshifted_f_representation])
+         'Unshifted form\n' + unshifted_f_real_representation])
 
-    return unshifted_f, text_representation
+    return f_polynoms, text_representation

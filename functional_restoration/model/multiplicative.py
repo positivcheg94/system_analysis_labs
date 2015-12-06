@@ -1,11 +1,10 @@
 from copy import deepcopy
 from itertools import product
 import multiprocessing as mp
-
 import numpy as np
-
 from functional_restoration.private.constants import DEFAULT_FLOAT_TYPE, CONST_EPS, CONST_EPS_LOG
 from functional_restoration.private.shared import *
+from functional_restoration.representation.shared import polynom_picker, make_basis
 from functional_restoration.representation.multiplicative import representation
 
 
@@ -38,8 +37,9 @@ def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, l
 
 
 class MultiplicativeResult:
-    def __init__(self, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small, c, normed_error,
-                 text_result):
+    def __init__(self, polynom_type, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small, c,
+                 normed_error, text_result):
+        self._polynom_type = polynom_type
         self._dims_x_i = dims_x_i
         self._x_scales = x_scales
         self._y_scales = y_scales
@@ -74,7 +74,36 @@ class MultiplicativeResult:
         return show_plots(self._y_matrix, self._f_real)
 
     def predict(self, x_matrix):
-        pass
+        dist_lambdas, max_degree = self._f_polynoms
+        polynom = self._polynom_type
+        a_small = self._a_small
+        c = self._c
+        basis = make_basis(polynom, max_degree)
+
+        x_normed_matrix = [
+            [(x_matrix[i][j] - self._x_scales[i][j][0]) / self._x_scales[i][j][1] for j in range(len(x_matrix[i]))] for
+            i in range(len(x_matrix))]
+
+        y = []
+        for func in range(len(dist_lambdas)):
+            val_f = 0
+            for i in range(len(dist_lambdas[func])):
+                val_f_i_log = 0
+                for j in range(len(dist_lambdas[func][i])):
+                    val_psi_i_j_log = np.sum(
+                        [np.log(basis[k](x_normed_matrix[i][j]) + 1 + CONST_EPS_LOG) * dist_lambdas[func][i][j][k] for k
+                         in range(len(dist_lambdas[func][i][j]))], axis=0)
+                    val_f_i_log += val_psi_i_j_log * a_small[func][i][j]
+                val_f += val_f_i_log * c[func][i]
+            y.append(np.exp(val_f) - 1)
+
+        y = np.array(y)
+
+        for i, scales in zip(range(len(y)), self._y_scales):
+            shift, zoom = scales
+            y[i] = y[i] * zoom + shift
+
+        return y
 
 
 class Multiplicative:
@@ -95,6 +124,8 @@ class Multiplicative:
         self._advanced_text_results = advanced_text_results
 
     def fit(self, data):
+        poly_type, _ = polynom_picker(self._polynom_type)
+
         x = deepcopy(data['x'])
         y = deepcopy(data['y'])
 
@@ -128,12 +159,12 @@ class Multiplicative:
         error = np.linalg.norm(y_matrix - f_real, np.inf, axis=1)
         error_text = "normed Y errors - {:s}\nY errors - {:s}".format(str(normed_error), str(error))
 
-        result_text = representation(self._polynom_type, self._p, dims_x_i, x_scales, lambdas, a_small, c)
+        f_polynoms, result_text = representation(self._polynom_type, self._p, dims_x_i, x_scales, lambdas, a_small, c)
 
         text = '\n\n'.join([error_text, result_text])
 
-        return MultiplicativeResult(dims_x_i, x_scales, y_scales, y_matrix, f_real, None, lambdas, a_small, c,
-                                    normed_error, text)
+        return MultiplicativeResult(poly_type, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas,
+                                    a_small, c, normed_error, text)
 
 
 class MultiplicativeDegreeFinderResult:
