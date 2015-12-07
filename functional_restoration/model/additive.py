@@ -1,9 +1,7 @@
 from copy import deepcopy
 from itertools import product
 import multiprocessing as mp
-
 import numpy as np
-
 from functional_restoration.private.constants import DEFAULT_FLOAT_TYPE, CONST_EPS
 from functional_restoration.private.shared import *
 from functional_restoration.representation.shared import polynom_picker
@@ -38,8 +36,8 @@ def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, y
 
 
 class AdditiveResult:
-    def __init__(self, polynom_type, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small, c, normed_error,
-                 text_result):
+    def __init__(self, polynom_type, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small, c,
+                 normed_error, error, text_result):
         self._polynom_type = polynom_type
         self._dims_x_i = dims_x_i
         self._x_scales = x_scales
@@ -51,6 +49,7 @@ class AdditiveResult:
         self._a_small = a_small
         self._c = c
         self._normed_error = normed_error
+        self._error = error
         self._text_result = text_result
 
     def dims_x(self):
@@ -68,6 +67,9 @@ class AdditiveResult:
     def normed_error(self):
         return self._normed_error
 
+    def error(self):
+        return self._error
+
     def text(self):
         return self._text_result
 
@@ -78,7 +80,9 @@ class AdditiveResult:
         n = len(x_matrix[0][0])
         y = []
 
-        x_normed_matrix = [[(x_matrix[i][j]-self._x_scales[i][j][0])/self._x_scales[i][j][1] for j in range(len(x_matrix[i]))] for i in range(len(x_matrix))]
+        x_normed_matrix = [
+            [(x_matrix[i][j] - self._x_scales[i][j][0]) / self._x_scales[i][j][1] for j in range(len(x_matrix[i]))] for
+            i in range(len(x_matrix))]
 
         for i in range(len(self._f_polynoms)):
             y_i = []
@@ -151,7 +155,8 @@ class Additive:
 
         text = '\n\n'.join([error_text, result_text])
 
-        return AdditiveResult(poly_type, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small, c, normed_error, text)
+        return AdditiveResult(poly_type, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small,
+                              c, normed_error, error, text)
 
 
 class AdditiveDegreeFinderResult:

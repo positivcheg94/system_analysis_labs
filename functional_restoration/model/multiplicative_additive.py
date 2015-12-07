@@ -12,7 +12,9 @@ class MulAddResult:
         self._additive_result = additive_result
         self._f_real = self._multiplicative_result._f_real + self._additive_result._f_real
         self._y_matrix = self._multiplicative_result._y_matrix
+        mul_res = multiplicative_result
         self._error = np.linalg.norm(self._y_matrix - self._f_real, np.inf, axis=1)
+        self._normed_error = self._error * mul_res.normed_error() / mul_res.error()
 
     def plot(self):
         return show_plots(self._y_matrix, self._f_real)
@@ -20,7 +22,9 @@ class MulAddResult:
     def text(self):
         multiplicative_text = 'Multiplicative\n{}\n'.format(self._multiplicative_result.text())
         additive_text = 'Additive\n{}\n'.format(self._additive_result.text())
-        return "Y errors - {:s}\n\n{:s}\n\n{:s}".format(str(self._error), multiplicative_text, additive_text)
+        return "Y normed errors - {:s}\nY errors - {:s}\n\n{:s}\n\n{:s}".format(str(self._normed_error),
+                                                                                str(self._error), multiplicative_text,
+                                                                                additive_text)
 
     def predict(self, x_matrix):
         pass
@@ -48,10 +52,10 @@ class MulAdd:
         x_matrix = np.array(x)
         y_matrix = np.array(y)
 
-        mul_res = Multiplicative(self._p, self._weights, self._method, self._poly_type, self._find_split_lambdas).fit(x,y)
-
+        mul_res = Multiplicative(self._p, self._weights, self._method, self._poly_type, self._find_split_lambdas).fit(x,
+                                                                                                                      y)
         y_resid = y_matrix - mul_res._f_real
-
-        add_res = Additive(self._p, self._weights, self._method, self._poly_type, self._find_split_lambdas).fit(x,y_resid)
+        add_res = Additive(self._p, self._weights, self._method, self._poly_type, self._find_split_lambdas).fit(x,
+                                                                                                                y_resid)
 
         return MulAddResult(mul_res, add_res)

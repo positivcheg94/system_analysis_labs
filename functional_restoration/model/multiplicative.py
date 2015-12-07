@@ -38,7 +38,7 @@ def __calculate_error_for_degrees__(degrees, x_normed_matrix, y_normed_matrix, l
 
 class MultiplicativeResult:
     def __init__(self, polynom_type, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small, c,
-                 normed_error, text_result):
+                 normed_error, error, text_result):
         self._polynom_type = polynom_type
         self._dims_x_i = dims_x_i
         self._x_scales = x_scales
@@ -50,6 +50,7 @@ class MultiplicativeResult:
         self._a_small = a_small
         self._c = c
         self._normed_error = normed_error
+        self._error = error
         self._text_result = text_result
 
     def dims_x(self):
@@ -66,6 +67,9 @@ class MultiplicativeResult:
 
     def normed_error(self):
         return self._normed_error
+
+    def error(self):
+        return self._error
 
     def text(self):
         return self._text_result
@@ -161,7 +165,7 @@ class Multiplicative:
         text = '\n\n'.join([error_text, result_text])
 
         return MultiplicativeResult(poly_type, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas,
-                                    a_small, c, normed_error, text)
+                                    a_small, c, normed_error, error, text)
 
 
 class MultiplicativeDegreeFinderResult:
