@@ -401,31 +401,35 @@ class Application:
         method = OPTIMIZATION_METHODS[self._method.get()]
         form = self._form.get()
 
-        if form == 'mul':
-            if find_best_degrees:
-                res = MultiplicativeDegreeFinder(degrees, weights, method, polynom, find_lambda).fit(self._data)
-                results = res.text()
-                self._last_plots = res.plot
-            else:
-                res = Multiplicative(degrees, weights, method, polynom, find_lambda).fit(self._data)
-                results = res.text()
-                self._last_plots = res.plot
-        elif form == 'mul-add':
-            res = MulAdd(degrees, weights, method, polynom, find_lambda).fit(self._data)
-            results = ''
-            self._last_plots = res.plot
-        else:
-            if find_best_degrees:
-                res = AdditiveDegreeFinder(degrees, weights, method, polynom, find_lambda).fit(self._data)
-                results = res.text()
-                self._last_plots = res.plot
-            else:
-                res = Additive(degrees, weights, method, polynom, find_lambda).fit(self._data)
-                results = res.text()
-                self._last_plots = res.plot
+        try:
 
-        self.reset_and_insert_results(results)
-        self.__write_to_file__(results)
+            if form == 'mul':
+                if find_best_degrees:
+                    res = MultiplicativeDegreeFinder(degrees, weights, method, polynom, find_lambda).fit(self._data)
+                    results = res.text()
+                    self._last_plots = res.plot
+                else:
+                    res = Multiplicative(degrees, weights, method, polynom, find_lambda).fit(self._data)
+                    results = res.text()
+                    self._last_plots = res.plot
+            elif form == 'mul-add':
+                res = MulAdd(degrees, weights, method, polynom, find_lambda).fit(self._data)
+                results = res.text()
+                self._last_plots = res.plot
+            else:
+                if find_best_degrees:
+                    res = AdditiveDegreeFinder(degrees, weights, method, polynom, find_lambda).fit(self._data)
+                    results = res.text()
+                    self._last_plots = res.plot
+                else:
+                    res = Additive(degrees, weights, method, polynom, find_lambda).fit(self._data)
+                    results = res.text()
+                    self._last_plots = res.plot
+
+            self.reset_and_insert_results(results)
+            self.__write_to_file__(results)
+        except ValueError as v_error:
+            self.__show_error__('ValueError', str(v_error))
 
     def _make_plot(self):
         self._last_plots()

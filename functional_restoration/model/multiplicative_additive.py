@@ -1,9 +1,7 @@
 from copy import deepcopy
-
 import numpy as np
 from functional_restoration.private.constants import DEFAULT_FLOAT_TYPE, CONST_EPS
 from functional_restoration.private.shared import *
-
 from functional_restoration.model.additive import Additive
 from functional_restoration.model.multiplicative import Multiplicative
 
@@ -12,11 +10,17 @@ class MulAddResult:
     def __init__(self, multiplicative_result, additive_result):
         self._multiplicative_result = multiplicative_result
         self._additive_result = additive_result
-        self._f_real = self._multiplicative_result._f_real+self._additive_result._f_real
+        self._f_real = self._multiplicative_result._f_real + self._additive_result._f_real
         self._y_matrix = self._multiplicative_result._y_matrix
+        self._error = np.linalg.norm(self._y_matrix - self._f_real, np.inf, axis=1)
 
     def plot(self):
         return show_plots(self._y_matrix, self._f_real)
+
+    def text(self):
+        multiplicative_text = 'Multiplicative\n{}\n'.format(self._multiplicative_result.text())
+        additive_text = 'Additive\n{}\n'.format(self._additive_result.text())
+        return "Y errors - {:s}\n\n{:s}\n\n{:s}".format(str(self._error), multiplicative_text, additive_text)
 
     def predict(self, x_matrix):
         pass
@@ -58,6 +62,7 @@ class MulAdd:
             y_dict[i] = y_resid[k]
         data_for_add['y'] = y_dict
 
-        add_res = Additive(self._p, self._weights, self._method, self._poly_type, self._find_split_lambdas).fit(data_for_add)
+        add_res = Additive(self._p, self._weights, self._method, self._poly_type, self._find_split_lambdas).fit(
+            data_for_add)
 
         return MulAddResult(mul_res, add_res)
