@@ -44,25 +44,14 @@ class MulAdd:
         self._find_split_lambdas = find_split_lambdas
         self._advanced_text_results = advanced_text_results
 
-    def fit(self, data):
-        d_copy = deepcopy(data)
-        x = d_copy['x']
-        y = d_copy['y']
+    def fit(self, x, y):
+        x_matrix = np.array(x)
+        y_matrix = np.array(y)
 
-        y_matrix = np.array([y[i] for i in sorted(y)])
-
-        mul_res = Multiplicative(self._p, self._weights, self._method, self._poly_type, self._find_split_lambdas).fit(
-            data)
+        mul_res = Multiplicative(self._p, self._weights, self._method, self._poly_type, self._find_split_lambdas).fit(x,y)
 
         y_resid = y_matrix - mul_res._f_real
 
-        data_for_add = {'x': x}
-        y_dict = {}
-        for i, k in zip(sorted(y), range(len(y))):
-            y_dict[i] = y_resid[k]
-        data_for_add['y'] = y_dict
-
-        add_res = Additive(self._p, self._weights, self._method, self._poly_type, self._find_split_lambdas).fit(
-            data_for_add)
+        add_res = Additive(self._p, self._weights, self._method, self._poly_type, self._find_split_lambdas).fit(x,y_resid)
 
         return MulAddResult(mul_res, add_res)

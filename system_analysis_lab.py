@@ -4,9 +4,10 @@ import tkinter as tk
 import tkinter.filedialog as file_dialog
 import tkinter.messagebox as message_box
 from collections import defaultdict
-
 from os import path
+
 import pandas
+import numpy as np
 
 from constants import *
 from functional_restoration.model.additive import Additive, AdditiveDegreeFinder
@@ -35,22 +36,26 @@ def __pick_save_file_dialog__(callback=None):
 def __parse_file__(file):
     data = pandas.ExcelFile(file, dtype=DEFAULT_FLOAT_TYPE).parse()
     columns = data.keys().tolist()
-    data_dict = {'x': {}, 'y': {}}
     tmp_dict = defaultdict(list)
     for column in sorted(columns):
         tmp_dict[column[:2].lower()].append(data[column].tolist())
 
+    x = []
+    y = []
     for i in sorted(tmp_dict.keys()):
         if i[0] == 'x':
-            data_dict['x'][i] = tmp_dict[i]
+            x.append(tmp_dict[i])
         elif i[0] == 'y':
-            data_dict['y'][i] = tmp_dict[i][0]
+            y.append(tmp_dict[i][0])
 
-    if len(data_dict['x']) > 3:
+    if len(x) > 3:
         print("sry, it's only experimental program, you can not have more than 3 x-variables")
         raise Exception
 
-    return data_dict
+    x_matrix = np.array(x)
+    y_matrix = np.array(y)
+
+    return x_matrix, y_matrix
 
 
 class Application:
@@ -337,9 +342,9 @@ class Application:
 
     def __update_info__(self):
         if self._data is not None:
-            x = self._data['x']
-            x_dims = [len(x[i]) for i in sorted(x)]
-            y_dim = len(self._data['y'])
+            x = self._data[0]
+            x_dims = [len(i) for i in x]
+            y_dim = len(self._data[1])
             self._vector_x1_dimension.config(text=str(x_dims[0]))
             self._vector_x2_dimension.config(text=str(x_dims[1]))
             self._vector_x3_dimension.config(text=str(x_dims[2]))
@@ -405,24 +410,24 @@ class Application:
 
             if form == 'mul':
                 if find_best_degrees:
-                    res = MultiplicativeDegreeFinder(degrees, weights, method, polynom, find_lambda).fit(self._data)
+                    res = MultiplicativeDegreeFinder(degrees, weights, method, polynom, find_lambda).fit(*self._data)
                     results = res.text()
                     self._last_plots = res.plot
                 else:
-                    res = Multiplicative(degrees, weights, method, polynom, find_lambda).fit(self._data)
+                    res = Multiplicative(degrees, weights, method, polynom, find_lambda).fit(*self._data)
                     results = res.text()
                     self._last_plots = res.plot
             elif form == 'mul-add':
-                res = MulAdd(degrees, weights, method, polynom, find_lambda).fit(self._data)
+                res = MulAdd(degrees, weights, method, polynom, find_lambda).fit(*self._data)
                 results = res.text()
                 self._last_plots = res.plot
             else:
                 if find_best_degrees:
-                    res = AdditiveDegreeFinder(degrees, weights, method, polynom, find_lambda).fit(self._data)
+                    res = AdditiveDegreeFinder(degrees, weights, method, polynom, find_lambda).fit(*self._data)
                     results = res.text()
                     self._last_plots = res.plot
                 else:
-                    res = Additive(degrees, weights, method, polynom, find_lambda).fit(self._data)
+                    res = Additive(degrees, weights, method, polynom, find_lambda).fit(*self._data)
                     results = res.text()
                     self._last_plots = res.plot
 

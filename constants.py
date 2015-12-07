@@ -1,6 +1,6 @@
 import numpy
 
-DEFAULT_FLOAT_TYPE = numpy.float128
+DEFAULT_FLOAT_TYPE = numpy.float
 
 DEFAULT_FORM = 'add'
 FORMS = ['add', 'mul', 'mul-add']

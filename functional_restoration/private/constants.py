@@ -1,5 +1,5 @@
 import numpy as np
-from numpy import float64, float128, float
+from numpy import float
 
 DEFAULT_FLOAT_TYPE = float
 

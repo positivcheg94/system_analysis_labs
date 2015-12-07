@@ -116,16 +116,13 @@ class Additive:
         self._find_split_lambdas = find_split_lambdas
         self._advanced_text_results = advanced_text_results
 
-    def fit(self, data):
+    def fit(self, x, y):
         poly_type, _ = polynom_picker(self._polynom_type)
 
-        x = deepcopy(data['x'])
-        y = deepcopy(data['y'])
+        x_matrix = np.array(x)
+        y_matrix = np.array(y)
 
-        x_matrix = np.array([x[i] for i in sorted(x)])
-        y_matrix = np.array([y[i] for i in sorted(y)])
-
-        dims_x_i = np.array([len(x[i]) for i in sorted(x)])
+        dims_x_i = np.array([len(i) for i in x])
 
         # norm data
         x_normed_matrix, x_scales = normalize_x_matrix(x_matrix)
@@ -197,14 +194,11 @@ class AdditiveDegreeFinder:
         self._polynom_type = get_polynom_function(poly_type)
         self._find_split_lambdas = find_split_lambdas
 
-    def fit(self, data):
-        x = deepcopy(data['x'])
-        y = deepcopy(data['y'])
+    def fit(self, x, y):
+        x_matrix = np.array(x)
+        y_matrix = np.array(y)
 
-        x_matrix = np.array([x[i] for i in sorted(x)])
-        y_matrix = np.array([y[i] for i in sorted(y)])
-
-        dims_x_i = np.array([len(x[i]) for i in sorted(x)])
+        dims_x_i = np.array([len(i) for i in x])
 
         # norm data
         x_normed_matrix, x_scales = normalize_x_matrix(x_matrix)
