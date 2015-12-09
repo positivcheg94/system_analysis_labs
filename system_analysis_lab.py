@@ -5,14 +5,12 @@ import tkinter.filedialog as file_dialog
 import tkinter.messagebox as message_box
 from collections import defaultdict
 from os import path
-
 import pandas
 import numpy as np
-
 from constants import *
-from functional_restoration.model.additive import Additive, AdditiveDegreeFinder
-from functional_restoration.model.multiplicative import Multiplicative, MultiplicativeDegreeFinder
-from functional_restoration.model.multiplicative_additive import MulAdd
+from functional_restoration.model.additive_model import Additive, AdditiveDegreeFinder
+from functional_restoration.model.multiplicative_model import Multiplicative, MultiplicativeDegreeFinder
+from functional_restoration.model.mixed_model import Mixed
 
 CONST_LIMIT = 1000
 
@@ -418,7 +416,7 @@ class Application:
                     results = res.text()
                     self._last_plots = res.plot
             elif form == 'mul-add':
-                res = MulAdd(degrees, weights, method, polynom, find_lambda).fit(*self._data)
+                res = Mixed(degrees, weights, method, ['mul', 'add'], polynom, find_lambda).fit(*self._data)
                 results = res.text()
                 self._last_plots = res.plot
             else:
