@@ -21,10 +21,7 @@ class MixedResult:
         return show_plots(self._y_matrix, self._f_real)
 
     def text(self):
-        #multiplicative_text = 'Multiplicative\n{}\n'.format(self._multiplicative_result.text())
-        #additive_text = 'Additive\n{}\n'.format(self._additive_result.text())
         return "Y normed errors - {:s}\nY errors - {:s}".format(str(self._normed_error),str(self._error))
-        #, multiplicative_text,additive_text)
 
     def predict(self, x_matrix):
         pass

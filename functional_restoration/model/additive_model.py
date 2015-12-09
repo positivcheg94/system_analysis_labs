@@ -76,24 +76,22 @@ class AdditiveResult:
     def plot(self):
         return show_plots(self._y_matrix, self._f_real)
 
-    def predict(self, x_matrix):
-        n = len(x_matrix[0][0])
+    def predict(self, x_matrix, normalize=False):
         y = []
 
-        x_normed_matrix = [
-            [(x_matrix[i][j] - self._x_scales[i][j][0]) / self._x_scales[i][j][1] for j in range(len(x_matrix[i]))] for
-            i in range(len(x_matrix))]
+        if normalize:
+            x = [
+                [(x_matrix[i][j] - self._x_scales[i][j][0]) / self._x_scales[i][j][1] for j in range(len(x_matrix[i]))]
+                for i in range(len(x_matrix))]
+        else:
+            x = x_matrix
 
         for i in range(len(self._f_polynoms)):
             y_i = []
-            for q in range(n):
-                sum_val = 0
-                for first in range(len(self._f_polynoms[i])):
-                    for second in range(len(self._f_polynoms[i][first])):
-                        value = (self._f_polynoms[i][first][second])(x_normed_matrix[first][second][q])
-                        sum_val += value
-                y_i.append(sum_val)
-            y.append(y_i)
+            for first in range(len(self._f_polynoms[i])):
+                for second in range(len(self._f_polynoms[i][first])):
+                    y_i.append(self._f_polynoms[i][first][second](x[first][second]))
+            y.append(np.sum(y_i, axis=0))
         y = np.array(y)
 
         for i, scales in zip(range(len(y)), self._y_scales):

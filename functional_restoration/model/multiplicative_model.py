@@ -77,16 +77,19 @@ class MultiplicativeResult:
     def plot(self):
         return show_plots(self._y_matrix, self._f_real)
 
-    def predict(self, x_matrix):
+    def predict(self, x_matrix, normalize=False):
         dist_lambdas, max_degree = self._f_polynoms
         polynom = self._polynom_type
         a_small = self._a_small
         c = self._c
         basis = make_basis(polynom, max_degree)
 
-        x_normed_matrix = [
-            [(x_matrix[i][j] - self._x_scales[i][j][0]) / self._x_scales[i][j][1] for j in range(len(x_matrix[i]))] for
-            i in range(len(x_matrix))]
+        if normalize:
+            x = [
+                [(x_matrix[i][j] - self._x_scales[i][j][0]) / self._x_scales[i][j][1] for j in range(len(x_matrix[i]))]
+                for i in range(len(x_matrix))]
+        else:
+            x = x_matrix
 
         y = []
         for func in range(len(dist_lambdas)):
@@ -95,8 +98,8 @@ class MultiplicativeResult:
                 val_f_i_log = 0
                 for j in range(len(dist_lambdas[func][i])):
                     val_psi_i_j_log = np.sum(
-                        [np.log(basis[k](x_normed_matrix[i][j]) + 1 + CONST_EPS_LOG) * dist_lambdas[func][i][j][k] for k
-                         in range(len(dist_lambdas[func][i][j]))], axis=0)
+                        [np.log(basis[k](x[i][j]) + 1 + CONST_EPS_LOG) * dist_lambdas[func][i][j][k] for k in
+                         range(len(dist_lambdas[func][i][j]))], axis=0)
                     val_f_i_log += val_psi_i_j_log * a_small[func][i][j]
                 val_f += val_f_i_log * c[func][i]
             y.append(np.exp(val_f) - 1)
