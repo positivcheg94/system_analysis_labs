@@ -21,10 +21,10 @@ class MixedResult:
         return show_plots(self._y_matrix, self._f_real)
 
     def text(self):
-        return "Y normed errors - {:s}\nY errors - {:s}".format(str(self._normed_error),str(self._error))
+        return "Y normed errors - {:s}\nY errors - {:s}".format(str(self._normed_error), str(self._error))
 
-    def predict(self, x_matrix):
-        pass
+    def predict(self, x_matrix, ):
+        return np.sum([i.predict(x_matrix) for i in self._model_results], axis=0)
 
 
 class Mixed:
@@ -46,15 +46,21 @@ class Mixed:
         self._find_split_lambdas = find_split_lambdas
         self._advanced_text_results = advanced_text_results
 
-    def fit(self, x, y):
-        x_matrix = np.array(x)
+    def fit(self, x, y, independent=False):
+        if independent:
+            x_new = [[i] for i in x]
+        else:
+            x_new = x
+
+        x_matrix = np.array(x_new)
         y_matrix = np.array(y)
 
         model_results = []
 
         y_last_resid = y_matrix
         for i in self._model_sequence:
-            current_result = models_map[i](self._p, self._weights, self._method, self._poly_type, self._find_split_lambdas).fit(x_matrix,y_last_resid)
+            current_result = models_map[i](self._p, self._weights, self._method, self._poly_type,
+                                           self._find_split_lambdas).fit(x_matrix, y_last_resid)
             y_last_resid = y_last_resid - current_result._f_real
             model_results.append(current_result)
 

@@ -5,12 +5,18 @@ import tkinter.filedialog as file_dialog
 import tkinter.messagebox as message_box
 from collections import defaultdict
 from os import path
+
 import pandas
 import numpy as np
 from constants import *
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+
 from functional_restoration.model.additive_model import Additive, AdditiveDegreeFinder
 from functional_restoration.model.multiplicative_model import Multiplicative, MultiplicativeDegreeFinder
 from functional_restoration.model.mixed_model import Mixed
+from functional_restoration.private.shared import transform_independent_x_matrix
+from risk_prediction import bulk_predict
 
 CONST_LIMIT = 1000
 
@@ -56,28 +62,59 @@ def __parse_file__(file):
     return x_matrix, y_matrix
 
 
+def __risks_parse_file__(file):
+    data = pandas.ExcelFile(file, dtype=DEFAULT_FLOAT_TYPE).parse()
+    columns = data.keys().tolist()
+    data_dict = {}
+    for column in sorted(columns):
+        data_dict[column.lower()] = data[column].tolist()
+    return data_dict
+
+
 class Application:
     @staticmethod
     def __show_error__(title, message):
         message_box.showerror(title, message)
 
-    def __init__(self, root=tk.Tk()):
-        self._main_window = root
+    @staticmethod
+    def __close_windows__(*windows):
+        for window in windows:
+            window.destroy()
+
+    def __init__(self, main_window=tk.Tk(), risks_window=tk.Tk()):
+        risks_window.withdraw()
+
+        self._main_window = main_window
         self._main_window.title('System analysis')
+        self._risks_window = risks_window
+        self._risks_window.title('Risks')
+
+        self._main_window.protocol("WM_DELETE_WINDOW",
+                                   lambda: Application.__close_windows__(self._main_window, self._risks_window))
+        self._risks_window.protocol("WM_DELETE_WINDOW",
+                                    lambda: Application.__close_windows__(self._main_window, self._risks_window))
+
         self._validator = self._main_window.register(__validate_only_digits__)
+        self._risks_validator = self._risks_window.register(__validate_only_digits__)
         self.__init_widgets__()
         # self.set_size(600,480)
         # self.resizeable(False)
 
     def __init_widgets__(self):
+
+        self.y1_abnormal = 11.7
+        self.y1_crash = 10.5
+        self.y2_abnormal = 1
+        self.y2_crash = 0
+        self.y3_abnormal = 11.85
+        self.y3_crash = 10.5
+
         self._last_plots = None
 
         self._data = None
+        self._risks_data = None
 
         self._last_result = None
-
-        self._samples = tk.StringVar()
-        self._samples.set('50')
 
         self._method = tk.StringVar()
         self._method.set(DEFAULT_METHOD)
@@ -97,15 +134,20 @@ class Application:
         self._find_best_degree = tk.IntVar()
         self._find_best_degree.set(0)
 
-        self._plot_mode = tk.IntVar()
-        self._plot_mode.set(1)
-
         self._top_block = tk.Frame(self._main_window)
         self._middle_block = tk.Frame(self._main_window)
         self._bottom_block = tk.Frame(self._main_window)
 
         self._input_file_name = None
         self._result_file_name = None
+        self._risks_input_file_name = None
+        self._risks_result_file_name = None
+
+        self._risks_current_step = 0
+
+        self._plot1 = None
+        self._plot2 = None
+        self._plot3 = None
 
         #        # input_data_frame
         self._input_data_frame = tk.Frame(self._top_block, padx=5, relief='groove', borderwidth=5)
@@ -138,7 +180,7 @@ class Application:
         self._files_picker_result_label = tk.Label(self._files_picker_result_frame, text='select file')
         self._files_picker_result_button = tk.Button(self._files_picker_result_frame, text='...',
                                                      command=lambda: __pick_save_file_dialog__(
-                                                         self.__set_result_file_name__))
+                                                             self.__set_result_file_name__))
         self._files_picker_result_label.pack(side='left')
         self._files_picker_result_button.pack(side='right')
         #                    # !result file picker frame
@@ -298,6 +340,8 @@ class Application:
         self._middle_frame_button_left = tk.Frame(self._middle_block)
         self._plot_button = tk.Button(self._middle_frame_button_left, command=self._make_plot, text='Make plots')
         self._plot_button.pack()
+        self._change_mode_to_risks = tk.Button(self._middle_block, command=self._switch_to_risks, text='Risks')
+        self._change_mode_to_risks.pack()
         #        #right button
         self._middle_frame_button_right = tk.Frame(self._middle_block)
         self._process_button = tk.Button(self._middle_frame_button_right, text='Process calculations',
@@ -318,55 +362,59 @@ class Application:
         self._result_frame.pack(fill='x')
         self._bottom_block.pack(fill='x')
 
-    def __set_input_file_name__(self, file_name):
-        self._input_file_name = file_name
-        self._files_picker_input_label.config(text=path.basename(file_name))
+        # risks #
+        # risks #
+        # risks #
 
-    def __reset_input_file__(self):
-        self._input_file_name = None
-        self._files_picker_input_label.config(text='select file')
-        self.__reset_data__()
-        self.__update_info__()
+        self._risks_picker_frame = tk.Frame(self._risks_window)
 
-    def __set_result_file_name__(self, file_name):
-        self._result_file_name = file_name
-        self._files_picker_result_label.config(text=path.basename(file_name))
+        self._risks_files_picker_input_frame = tk.Frame(self._risks_picker_frame)
+        self._risks_files_picker_input_label = tk.Label(self._risks_files_picker_input_frame, text='select file')
+        self._risks_files_picker_input_button = tk.Button(self._risks_files_picker_input_frame, text='...',
+                                                          command=self.__risks_select_input_file__)
+        self._risks_files_picker_input_label.pack(side='left')
+        self._risks_files_picker_input_button.pack(side='right')
 
-    def __load_data__(self, data_dict):
-        self._data = data_dict
+        self._risks_files_picker_result_frame = tk.Frame(self._risks_picker_frame)
+        self._risks_files_picker_result_label = tk.Label(self._risks_files_picker_result_frame, text='select file')
+        self._risks_files_picker_result_button = tk.Button(self._risks_files_picker_result_frame, text='...',
+                                                           command=lambda: __pick_save_file_dialog__(
+                                                                   self.__risks_set_result_file_name__))
+        self._risks_files_picker_result_label.pack(side='left')
+        self._risks_files_picker_result_button.pack(side='right')
 
-    def __reset_data__(self):
-        self._data = None
+        self._risks_files_picker_input_frame.pack(fill='x')
+        self._risks_files_picker_result_frame.pack(fill='x')
 
-    def __update_info__(self):
-        if self._data is not None:
-            x = self._data[0]
-            x_dims = [len(i) for i in x]
-            y_dim = len(self._data[1])
-            self._vector_x1_dimension.config(text=str(x_dims[0]))
-            self._vector_x2_dimension.config(text=str(x_dims[1]))
-            self._vector_x3_dimension.config(text=str(x_dims[2]))
-            self._vector_y_dimension.config(text=str(y_dim))
-        else:
-            self._vector_x1_dimension.config(text='')
-            self._vector_x2_dimension.config(text='')
-            self._vector_x3_dimension.config(text='')
-            self._vector_y_dimension.config(text='')
+        self._step_size_frame = tk.Frame(self._risks_picker_frame)
+        tk.Label(self._step_size_frame, text='step size').pack(side='left')
+        self._step_size_edit = tk.Entry(self._step_size_frame, validate='key',
+                                        validatecommand=(self._risks_validator, '%S'))
+        self._step_size_edit.insert(0, '10')
+        self._step_size_edit.pack(side='right')
+        self._step_size_frame.pack(fill='x')
 
-    def __select_input_file__(self):
-        picked_file = file_dialog.askopenfile()
-        if picked_file is None:
-            return None
-        picked_file_name = picked_file.name
-        try:
-            data = __parse_file__(picked_file_name)
-        except:
-            self.__reset_input_file__()
-            self.__show_error__('Open File Error', 'Cannot open file. Bad format')
-            return
-        self.__set_input_file_name__(picked_file_name)
-        self.__load_data__(data)
-        self.__update_info__()
+        self._risks_picker_frame.pack(side='left')
+
+        self._risks_plots_frame = tk.Frame(self._risks_window)
+        figure = Figure()
+        self._plot1 = figure.add_subplot(3, 1, 1)
+        self._plot2 = figure.add_subplot(3, 1, 2)
+        self._plot3 = figure.add_subplot(3, 1, 3)
+        self._risks_canvas = FigureCanvasTkAgg(figure, master=self._risks_plots_frame)
+        self._risks_canvas.show()
+        self._risks_canvas.get_tk_widget().pack(fill='both')
+        self._risks_plots_frame.pack()
+
+        self._return_to_main_button_frame = tk.Frame(self._risks_window)
+        tk.Button(self._return_to_main_button_frame, command=self._switch_to_main_window,
+                  text='Return to main window').pack()
+        self._return_to_main_button_frame.pack(fill='x')
+
+        self._process_risk_calculations_frame = tk.Frame(self._risks_window)
+        tk.Button(self._process_risk_calculations_frame, command=self.__risks_make_calculations__,
+                  text='Process risk calcucations').pack()
+        self._process_risk_calculations_frame.pack(fill='x')
 
     def __make_calculations__(self):
         if self._input_file_name is None or self._result_file_name is None:
@@ -434,6 +482,189 @@ class Application:
         except ValueError as v_error:
             self.__show_error__('ValueError', str(v_error))
 
+    def __risks_make_calculations__(self):
+
+        n = len(self._risks_data['q'])
+        self._risks_data['x3'] = (self._risks_data['x3'] + np.random.randn(n) * 1e-8).tolist()
+        lag_len = 70
+        prediction_length = int(self._step_size_edit.get())
+        times = round(n / prediction_length)
+
+        y1 = []
+        y2 = []
+        y3 = []
+
+        for i in range(times):
+            start = prediction_length * i
+            end = start + lag_len
+            super_end = end + prediction_length
+            current_x1 = [self._risks_data['x1'][start:end], self._risks_data['x2'][start:end],
+                          self._risks_data['x3'][start:end], self._risks_data['x4'][start:end]]
+
+            current_x2 = [self._risks_data['x2'][start:end], self._risks_data['x3'][start:end]]
+
+            current_x3 = [self._risks_data['x2'][start:end], self._risks_data['x3'][start:end],
+                          self._risks_data['x4'][start:end]]
+
+            current_y1 = self._risks_data['y1'][start:end]
+            current_y2 = self._risks_data['y2'][start:end]
+            current_y3 = self._risks_data['y3'][start:end]
+
+            processing_model_x1 = Multiplicative([20, 20, 20, 20], 'average', 'lstsq', find_split_lambdas=True)
+            processing_model_x2 = Multiplicative([20, 20, ], 'average', 'lstsq', find_split_lambdas=True)
+            processing_model_x3 = Multiplicative([20, 20, 20], 'average', 'lstsq', find_split_lambdas=True)
+
+            # next_x1 = bulk_predict(current_x1, prediction_length)
+            # next_x2 = bulk_predict(current_x2, prediction_length)
+            # next_x3 = bulk_predict(current_x3, prediction_length)
+
+            next_x1 = [self._risks_data['x1'][end:super_end], self._risks_data['x2'][end:super_end],
+                       self._risks_data['x3'][end:super_end], self._risks_data['x4'][end:super_end]]
+
+            next_x2 = [self._risks_data['x2'][end:super_end], self._risks_data['x3'][end:super_end]]
+
+            next_x3 = [self._risks_data['x2'][end:super_end], self._risks_data['x3'][end:super_end],
+                       self._risks_data['x4'][end:super_end]]
+
+            res_x1 = processing_model_x1.fit(transform_independent_x_matrix(current_x1), [current_y1])
+            res_x2 = processing_model_x2.fit(transform_independent_x_matrix(current_x2), [current_y2])
+            res_x3 = processing_model_x3.fit(transform_independent_x_matrix(current_x3), [current_y3])
+
+            # """
+            next_y1 = res_x1.predict(transform_independent_x_matrix(next_x1), normalize=True)
+            next_y2 = res_x2.predict(transform_independent_x_matrix(next_x2), normalize=True)
+            next_y3 = res_x3.predict(transform_independent_x_matrix(next_x3), normalize=True)
+
+            y1 = y1 + next_y1.flatten().tolist()
+            y2 = y2 + next_y2.flatten().tolist()
+            y3 = y3 + next_y3.flatten().tolist()
+            # """
+
+            """
+            next_y1 = self._risks_data['y1'][end:super_end]
+            next_y2 = self._risks_data['y2'][end:super_end]
+            next_y3 = self._risks_data['y3'][end:super_end]
+
+            y1 = y1+next_y1
+            y2 = y2+next_y2
+            y3 = y3+next_y3
+            """
+
+            self.draw_plot1(y1)
+            self.draw_plot2(y2)
+            self.draw_plot3(y3)
+
+    def draw_plot1(self, x):
+        n = len(x)
+        self._plot1.clear()
+        self._plot1.set_ylim(10, 15)
+        self._plot1.axhline(self.y1_abnormal, color='b')
+        self._plot1.axhline(self.y1_crash, color='r')
+        self._plot1.plot(range(n), x, 'y')
+        self._risks_canvas.draw()
+
+    def draw_plot2(self, x):
+        n = len(x)
+        self._plot2.clear()
+        self._plot2.axhline(self.y2_abnormal, color='b')
+        self._plot2.axhline(self.y2_crash, color='r')
+        self._plot2.plot(range(n), x, 'y')
+        self._risks_canvas.draw()
+
+    def draw_plot3(self, x):
+        n = len(x)
+        self._plot3.clear()
+        self._plot3.set_ylim(10, 15)
+        self._plot3.axhline(self.y3_abnormal, color='b')
+        self._plot3.axhline(self.y3_crash, color='r')
+        self._plot3.plot(range(n), x, 'y')
+        self._risks_canvas.draw()
+
+    def __set_input_file_name__(self, file_name):
+        self._input_file_name = file_name
+        self._files_picker_input_label.config(text=path.basename(file_name))
+
+    def __risks_set_input_file_name__(self, file_name):
+        self._risks_input_file_name = file_name
+        self._risks_files_picker_input_label.config(text=path.basename(file_name))
+
+    def __set_result_file_name__(self, file_name):
+        self._result_file_name = file_name
+        self._files_picker_result_label.config(text=path.basename(file_name))
+
+    def __risks_set_result_file_name__(self, file_name):
+        self._risks_result_file_name = file_name
+        self._risks_files_picker_result_label.config(text=path.basename(file_name))
+
+    def __reset_input_file__(self):
+        self._input_file_name = None
+        self._files_picker_input_label.config(text='select file')
+        self.__load_data__()
+        self.__update_info__()
+
+    def __risks_reset_input_file__(self):
+        self._risks_input_file_name = None
+        self._risks_files_picker_input_label.config(text='select file')
+        self.__risks_load_data__()
+
+    def __reset_result_file__(self):
+        self._result_file_name = None
+        self._files_picker_result_label.config(text='select file')
+
+    def __risks_reset_result_file__(self):
+        self._risks_result_file_name = None
+        self._risks_files_picker_result_label.config(text='select file')
+
+    def __load_data__(self, data_dict=None):
+        self._data = data_dict
+
+    def __risks_load_data__(self, data_dict=None):
+        self._risks_data = data_dict
+
+    def __update_info__(self):
+        if self._data is not None:
+            x = self._data[0]
+            x_dims = [len(i) for i in x]
+            y_dim = len(self._data[1])
+            self._vector_x1_dimension.config(text=str(x_dims[0]))
+            self._vector_x2_dimension.config(text=str(x_dims[1]))
+            self._vector_x3_dimension.config(text=str(x_dims[2]))
+            self._vector_y_dimension.config(text=str(y_dim))
+        else:
+            self._vector_x1_dimension.config(text='')
+            self._vector_x2_dimension.config(text='')
+            self._vector_x3_dimension.config(text='')
+            self._vector_y_dimension.config(text='')
+
+    def __select_input_file__(self):
+        picked_file = file_dialog.askopenfile()
+        if picked_file is None:
+            return None
+        picked_file_name = picked_file.name
+        try:
+            data = __parse_file__(picked_file_name)
+        except:
+            self.__reset_input_file__()
+            self.__show_error__('Open File Error', 'Cannot open file. Bad format')
+            return
+        self.__set_input_file_name__(picked_file_name)
+        self.__load_data__(data)
+        self.__update_info__()
+
+    def __risks_select_input_file__(self):
+        picked_file = file_dialog.askopenfile()
+        if picked_file is None:
+            return None
+        picked_file_name = picked_file.name
+        try:
+            data = __risks_parse_file__(picked_file_name)
+        except:
+            self.__risks_reset_input_file__()
+            self.__show_error__('Open File Error', 'Cannot open file. Bad format')
+            return
+        self.__risks_set_input_file_name__(picked_file_name)
+        self.__risks_load_data__(data)
+
     def _make_plot(self):
         self._last_plots()
 
@@ -451,6 +682,20 @@ class Application:
 
     def __write_to_file__(self, data):
         open(self._result_file_name, 'w').write(data)
+
+    def _switch_to_risks(self):
+        self._main_window.withdraw()
+        self._risks_window.deiconify()
+        self.__reset_input_file__()
+        self.__reset_result_file__()
+        self.__load_data__()
+
+    def _switch_to_main_window(self):
+        self._risks_window.withdraw()
+        self._main_window.deiconify()
+        self.__risks_reset_input_file__()
+        self.__risks_reset_result_file__()
+        self.__risks_load_data__()
 
     def execute(self):
         self._main_window.mainloop()

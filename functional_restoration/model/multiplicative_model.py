@@ -98,8 +98,8 @@ class MultiplicativeResult:
                 val_f_i_log = 0
                 for j in range(len(dist_lambdas[func][i])):
                     val_psi_i_j_log = np.sum(
-                        [np.log(basis[k](x[i][j]) + 1 + CONST_EPS_LOG) * dist_lambdas[func][i][j][k] for k in
-                         range(len(dist_lambdas[func][i][j]))], axis=0)
+                            [np.log(basis[k](x[i][j]) + 1 + CONST_EPS_LOG) * dist_lambdas[func][i][j][k] for k in
+                             range(len(dist_lambdas[func][i][j]))], axis=0)
                     val_f_i_log += val_psi_i_j_log * a_small[func][i][j]
                 val_f += val_f_i_log * c[func][i]
             y.append(np.exp(val_f) - 1)
@@ -130,10 +130,15 @@ class Multiplicative:
         self._find_split_lambdas = find_split_lambdas
         self._advanced_text_results = advanced_text_results
 
-    def fit(self, x, y):
+    def fit(self, x, y, independent=False):
         poly_type, _ = polynom_picker(self._polynom_type)
 
-        x_matrix = np.array(x)
+        if independent:
+            x_new = [[i] for i in x]
+        else:
+            x_new = x
+
+        x_matrix = np.array(x_new)
         y_matrix = np.array(y)
 
         dims_x_i = np.array([len(i) for i in x])
@@ -211,8 +216,13 @@ class MultiplicativeDegreeFinder:
         self._polynom_type = get_polynom_function(poly_type)
         self._find_split_lambdas = find_split_lambdas
 
-    def fit(self, x, y):
-        x_matrix = np.array(x)
+    def fit(self, x, y, independent=False):
+        if independent:
+            x_new = [[i] for i in x]
+        else:
+            x_new = x
+
+        x_matrix = np.array(x_new)
         y_matrix = np.array(y)
 
         dims_x_i = np.array([len(i) for i in x])
@@ -247,8 +257,8 @@ class MultiplicativeDegreeFinder:
 
         text_result = '\n'.join('Best degrees for Y{} are {} with normed error - {}'.format(i + 1,
                                                                                             convert_degrees_to_string(
-                                                                                                best_results[i][
-                                                                                                    'degrees']),
+                                                                                                    best_results[i][
+                                                                                                        'degrees']),
                                                                                             best_results[i]['norm']) for
                                 i in range(len(best_results)))
 

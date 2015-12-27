@@ -1,4 +1,3 @@
-from copy import deepcopy
 from itertools import product
 import multiprocessing as mp
 import numpy as np
@@ -11,8 +10,8 @@ from functional_restoration.representation.additive import representation
 def make_a_matrix(x, p, polynom):
     n = len(x[0][0])
     a_matrix = np.array(
-        [[polynom(p_j, x_i_j[k]) for x_i in range(len(x)) for x_i_j in x[x_i] for p_j in range(p[x_i])] for k in
-         range(n)])
+            [[polynom(p_j, x_i_j[k]) for x_i in range(len(x)) for x_i_j in x[x_i] for p_j in range(p[x_i])] for k in
+             range(n)])
     return a_matrix
 
 
@@ -118,10 +117,15 @@ class Additive:
         self._find_split_lambdas = find_split_lambdas
         self._advanced_text_results = advanced_text_results
 
-    def fit(self, x, y):
+    def fit(self, x, y, independent=False):
         poly_type, _ = polynom_picker(self._polynom_type)
 
-        x_matrix = np.array(x)
+        if independent:
+            x_new = [[i] for i in x]
+        else:
+            x_new = x
+
+        x_matrix = np.array(x_new)
         y_matrix = np.array(y)
 
         dims_x_i = np.array([len(i) for i in x])
@@ -197,8 +201,13 @@ class AdditiveDegreeFinder:
         self._polynom_type = get_polynom_function(poly_type)
         self._find_split_lambdas = find_split_lambdas
 
-    def fit(self, x, y):
-        x_matrix = np.array(x)
+    def fit(self, x, y, independent=False):
+        if independent:
+            x_new = [[i] for i in x]
+        else:
+            x_new = x
+
+        x_matrix = np.array(x_new)
         y_matrix = np.array(y)
 
         dims_x_i = np.array([len(i) for i in x])
@@ -231,8 +240,8 @@ class AdditiveDegreeFinder:
 
         text_result = '\n'.join('Best degrees for Y{} are {} with normed error - {}'.format(i + 1,
                                                                                             convert_degrees_to_string(
-                                                                                                best_results[i][
-                                                                                                    'degrees']),
+                                                                                                    best_results[i][
+                                                                                                        'degrees']),
                                                                                             best_results[i]['norm']) for
                                 i in range(len(best_results)))
 

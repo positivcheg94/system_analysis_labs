@@ -12,7 +12,7 @@ from functional_restoration.private.minimize import *
 __all__ = ['minimize_equation', 'normalize_x_matrix', 'normalize_y_matrix',
            'make_b_matrix', 'get_polynom_function', 'make_lambdas', 'make_split_lambdas',
            'x_i_j_dimensions', 'make_psi', 'make_a_small_matrix', 'make_f_i', 'make_c_small',
-           'make_f', 'make_real_f', 'show_plots', 'convert_degrees_to_string']
+           'make_f', 'make_real_f', 'show_plots', 'convert_degrees_to_string', 'transform_independent_x_matrix']
 
 
 def minimize_equation(a_matrix, b_vector, eps, method=DEFAULT_METHOD):
@@ -31,6 +31,8 @@ def minimize_equation(a_matrix, b_vector, eps, method=DEFAULT_METHOD):
 def normalize_vector(v):
     v_min, v_max = np.min(v), np.max(v)
     l = v_max - v_min
+    if l == 0:
+        l = 1
     scales = np.array([v_min, l])
     normed_v = (v - v_min) / l
     return normed_v, scales
@@ -178,3 +180,7 @@ def show_plots(y, y_approximation):
 
 def convert_degrees_to_string(degrees):
     return ' '.join('X{:d} - {:d}'.format(i + 1, degrees[i]) for i in range(len(degrees)))
+
+
+def transform_independent_x_matrix(x_matrix):
+    return [[i] for i in x_matrix]
