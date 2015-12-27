@@ -11,6 +11,7 @@ import numpy as np
 from constants import *
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+from openpyxl import Workbook
 
 from functional_restoration.model.additive_model import Additive, AdditiveDegreeFinder
 from functional_restoration.model.multiplicative_model import Multiplicative, MultiplicativeDegreeFinder
@@ -484,20 +485,29 @@ class Application:
 
     def __risks_make_calculations__(self):
 
+        risk_div1 = self.y1_crash - self.y1_abnormal
+        risk_div2 = self.y2_crash - self.y2_abnormal
+        risk_div3 = self.y3_crash - self.y3_abnormal
+
         n = len(self._risks_data['q'])
         self._risks_data['x3'] = (self._risks_data['x3'] + np.random.randn(n) * 1e-8).tolist()
         lag_len = 70
         prediction_length = int(self._step_size_edit.get())
         times = round(n / prediction_length)
 
+        output_data = []
+
         y1 = []
         y2 = []
         y3 = []
 
-        for i in range(times):
+        for i in range(times-10):
             start = prediction_length * i
             end = start + lag_len
             super_end = end + prediction_length
+
+            next_time = self._risks_data['q'][end:super_end]
+
             current_x1 = [self._risks_data['x1'][start:end], self._risks_data['x2'][start:end],
                           self._risks_data['x3'][start:end], self._risks_data['x4'][start:end]]
 
@@ -531,13 +541,13 @@ class Application:
             res_x3 = processing_model_x3.fit(transform_independent_x_matrix(current_x3), [current_y3])
 
             # """
-            next_y1 = res_x1.predict(transform_independent_x_matrix(next_x1), normalize=True)
-            next_y2 = res_x2.predict(transform_independent_x_matrix(next_x2), normalize=True)
-            next_y3 = res_x3.predict(transform_independent_x_matrix(next_x3), normalize=True)
+            next_y1 = res_x1.predict(transform_independent_x_matrix(next_x1), normalize=True).flatten().tolist()
+            next_y2 = res_x2.predict(transform_independent_x_matrix(next_x2), normalize=True).flatten().tolist()
+            next_y3 = res_x3.predict(transform_independent_x_matrix(next_x3), normalize=True).flatten().tolist()
 
-            y1 = y1 + next_y1.flatten().tolist()
-            y2 = y2 + next_y2.flatten().tolist()
-            y3 = y3 + next_y3.flatten().tolist()
+            y1 = y1 + next_y1
+            y2 = y2 + next_y2
+            y3 = y3 + next_y3
             # """
 
             """
@@ -553,6 +563,54 @@ class Application:
             self.draw_plot1(y1)
             self.draw_plot2(y2)
             self.draw_plot3(y3)
+
+            for i in range(prediction_length):
+                tmp_list = [int(next_time[i]), next_y1[i], next_y2[i], next_y3[i]]
+
+                if next_y1[i] > self.y1_abnormal and next_y2[i] > self.y2_abnormal and next_y3[i] > self.y3_abnormal:
+                    tmp_list.append('система функционирует нормально')
+                    state = 'ok'
+                    total_risk = 0
+                    danger_level = 0
+                elif next_y1[i] > self.y1_crash and next_y2[i] > self.y2_crash and next_y3[i] > self.y2_crash:
+                    f1 = next_y1[i] <= self.y1_abnormal
+                    f2 = next_y2[i] <= self.y2_abnormal
+                    f3 = next_y3[i] <= self.y3_abnormal
+                    abnormal_sum = sum((f1, f2, f3))
+                    tmp_list.append('система функционирует нештатно')
+                    state = 'bad'
+                    risk_1 = (next_y1[i] - self.y1_abnormal) / risk_div1
+                    risk_2 = (next_y2[i] - self.y2_abnormal) / risk_div2
+                    risk_3 = (next_y3[i] - self.y3_abnormal) / risk_div3
+                    total_risk = 1 - (1 - risk_1) * (1 - risk_2) * (1 - risk_3)
+                    if total_risk>0.2:
+                        danger_level = 2+total_risk*5
+                    else:
+                        if abnormal_sum is 1:
+                            danger_level = 1
+                        else:
+                            danger_level = 2
+
+                else:
+                    tmp_list.append('система функционирует аварийно')
+                    state = 'so bad'
+                    total_risk = 1
+                    danger_level = 7
+
+                tmp_list.append(total_risk)
+                if state != 'ok':
+                    tmp_list.append('insert reason here LOL')
+                else:
+                    tmp_list.append(' - ')
+                tmp_list.append(danger_level)
+
+                output_data.append(tmp_list)
+
+            wb = Workbook()
+            ws = wb.active
+            for i in output_data:
+                ws.append(i)
+            wb.save('output.xlsx')
 
     def draw_plot1(self, x):
         n = len(x)
