@@ -13,3 +13,12 @@ def predict(x, prediction_length):
 
 def bulk_predict(x_matrix, prediction_length):
     return [predict(i, prediction_length) for i in x_matrix]
+
+
+def calculate_risk(y, y_abnormal, y_crash):
+    if y > y_abnormal:
+        return 0
+    elif y > y_crash:
+        return (y - y_abnormal) / (y_crash - y_abnormal)
+    else:
+        return 1

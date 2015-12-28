@@ -77,7 +77,7 @@ class MultiplicativeResult:
     def plot(self):
         return show_plots(self._y_matrix, self._f_real)
 
-    def predict(self, x_matrix, normalize=False):
+    def predict(self, x_matrix, normalize=True):
         dist_lambdas, max_degree = self._f_polynoms
         polynom = self._polynom_type
         a_small = self._a_small
@@ -130,7 +130,7 @@ class Multiplicative:
         self._find_split_lambdas = find_split_lambdas
         self._advanced_text_results = advanced_text_results
 
-    def fit(self, x, y, independent=False):
+    def fit(self, x, y, normalize=True, independent=False):
         poly_type, _ = polynom_picker(self._polynom_type)
 
         if independent:
@@ -144,7 +144,12 @@ class Multiplicative:
         dims_x_i = np.array([len(i) for i in x])
 
         # norm data
-        x_normed_matrix, x_scales = normalize_x_matrix(x_matrix)
+        if normalize:
+            x_normed_matrix, x_scales = normalize_x_matrix(x_matrix)
+        else:
+            x_normed_matrix = x_matrix
+            scales = np.array([0, 1])
+            x_scales = [[scales for j in i] for i in x_matrix]
         y_normed_matrix, y_scales = normalize_y_matrix(y_matrix)
 
         ln_y_add_one = np.log(y_normed_matrix + 1)
@@ -172,8 +177,7 @@ class Multiplicative:
 
         text = '\n\n'.join([error_text, result_text])
 
-        return MultiplicativeResult(poly_type, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas,
-                                    a_small, c, normed_error, error, text)
+        return MultiplicativeResult(poly_type, dims_x_i, x_scales, y_scales, y_matrix, f_real, f_polynoms, lambdas, a_small, c, normed_error, error, text)
 
 
 class MultiplicativeDegreeFinderResult:
@@ -216,7 +220,7 @@ class MultiplicativeDegreeFinder:
         self._polynom_type = get_polynom_function(poly_type)
         self._find_split_lambdas = find_split_lambdas
 
-    def fit(self, x, y, independent=False):
+    def fit(self, x, y, normalize=True, independent=False):
         if independent:
             x_new = [[i] for i in x]
         else:
@@ -228,7 +232,12 @@ class MultiplicativeDegreeFinder:
         dims_x_i = np.array([len(i) for i in x])
 
         # norm data
-        x_normed_matrix, x_scales = normalize_x_matrix(x_matrix)
+        if normalize:
+            x_normed_matrix, x_scales = normalize_x_matrix(x_matrix)
+        else:
+            x_normed_matrix = x_matrix
+            scales = np.array([0, 1])
+            x_scales = [[scales for j in i] for i in x_matrix]
         y_normed_matrix, y_scales = normalize_y_matrix(y_matrix)
         ln_y_add_one = np.log(y_normed_matrix + 1)
 

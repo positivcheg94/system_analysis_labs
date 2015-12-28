@@ -6,6 +6,8 @@ from functional_restoration.private.shared import *
 from functional_restoration.representation.shared import polynom_picker
 from functional_restoration.representation.additive import representation
 
+import matplotlib.pyplot as plt
+
 
 def make_a_matrix(x, p, polynom):
     n = len(x[0][0])
@@ -75,7 +77,7 @@ class AdditiveResult:
     def plot(self):
         return show_plots(self._y_matrix, self._f_real)
 
-    def predict(self, x_matrix, normalize=False):
+    def predict(self, x_matrix, normalize=True):
         y = []
 
         if normalize:
@@ -117,7 +119,7 @@ class Additive:
         self._find_split_lambdas = find_split_lambdas
         self._advanced_text_results = advanced_text_results
 
-    def fit(self, x, y, independent=False):
+    def fit(self, x, y, normalize=True, independent=False):
         poly_type, _ = polynom_picker(self._polynom_type)
 
         if independent:
@@ -131,7 +133,12 @@ class Additive:
         dims_x_i = np.array([len(i) for i in x])
 
         # norm data
-        x_normed_matrix, x_scales = normalize_x_matrix(x_matrix)
+        if normalize:
+            x_normed_matrix, x_scales = normalize_x_matrix(x_matrix)
+        else:
+            x_normed_matrix = x_matrix
+            scales = np.array([0,1])
+            x_scales = [[scales for j in i] for i in x_matrix]
         y_normed_matrix, y_scales = normalize_y_matrix(y_matrix)
 
         b_matrix = make_b_matrix(y_normed_matrix, self._weights)
@@ -201,7 +208,7 @@ class AdditiveDegreeFinder:
         self._polynom_type = get_polynom_function(poly_type)
         self._find_split_lambdas = find_split_lambdas
 
-    def fit(self, x, y, independent=False):
+    def fit(self, x, y, normalize=True, independent=False):
         if independent:
             x_new = [[i] for i in x]
         else:
@@ -212,8 +219,12 @@ class AdditiveDegreeFinder:
 
         dims_x_i = np.array([len(i) for i in x])
 
-        # norm data
-        x_normed_matrix, x_scales = normalize_x_matrix(x_matrix)
+        if normalize:
+            x_normed_matrix, x_scales = normalize_x_matrix(x_matrix)
+        else:
+            x_normed_matrix = x_matrix
+            scales = np.array([0,1])
+            x_scales = [[scales for j in i] for i in x_matrix]
         y_normed_matrix, y_scales = normalize_y_matrix(y_matrix)
 
         b_matrix = make_b_matrix(y_normed_matrix, self._weights)

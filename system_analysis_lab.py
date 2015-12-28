@@ -16,8 +16,8 @@ from openpyxl import Workbook
 from functional_restoration.model.additive_model import Additive, AdditiveDegreeFinder
 from functional_restoration.model.multiplicative_model import Multiplicative, MultiplicativeDegreeFinder
 from functional_restoration.model.mixed_model import Mixed
-from functional_restoration.private.shared import transform_independent_x_matrix
-from risk_prediction import bulk_predict
+from functional_restoration.private.shared import transform_independent_x_matrix, normalize_vector
+from risk_prediction import bulk_predict, calculate_risk
 
 CONST_LIMIT = 1000
 
@@ -53,7 +53,7 @@ def __parse_file__(file):
         elif i[0] == 'y':
             y.append(tmp_dict[i][0])
 
-    if len(x) > 3:
+    if len(x) > 4:
         print("sry, it's only experimental program, you can not have more than 3 x-variables")
         raise Exception
 
@@ -485,11 +485,17 @@ class Application:
 
     def __risks_make_calculations__(self):
 
-        risk_div1 = self.y1_crash - self.y1_abnormal
-        risk_div2 = self.y2_crash - self.y2_abnormal
-        risk_div3 = self.y3_crash - self.y3_abnormal
+        model_size = 10
 
         n = len(self._risks_data['q'])
+
+        """
+        self._risks_data['x1'],_ = normalize_vector(self._risks_data['x1'])
+        self._risks_data['x2'],_ = normalize_vector(self._risks_data['x2'])
+        self._risks_data['x3'],_ = normalize_vector(self._risks_data['x3'])
+        self._risks_data['x4'],_ = normalize_vector(self._risks_data['x4'])
+        # """
+
         self._risks_data['x3'] = (self._risks_data['x3'] + np.random.randn(n) * 1e-8).tolist()
         lag_len = 70
         prediction_length = int(self._step_size_edit.get())
@@ -501,8 +507,8 @@ class Application:
         y2 = []
         y3 = []
 
-        for i in range(times-10):
-            start = prediction_length * i
+        for j in range(times - 10):
+            start = prediction_length * j
             end = start + lag_len
             super_end = end + prediction_length
 
@@ -520,14 +526,28 @@ class Application:
             current_y2 = self._risks_data['y2'][start:end]
             current_y3 = self._risks_data['y3'][start:end]
 
-            processing_model_x1 = Multiplicative([20, 20, 20, 20], 'average', 'lstsq', find_split_lambdas=True)
-            processing_model_x2 = Multiplicative([20, 20, ], 'average', 'lstsq', find_split_lambdas=True)
-            processing_model_x3 = Multiplicative([20, 20, 20], 'average', 'lstsq', find_split_lambdas=True)
+            # """
+            processing_model_x1 = Mixed([model_size, model_size, model_size, model_size], 'average', 'lstsq',
+                                        ['mul', 'add'], find_split_lambdas=True)
+            processing_model_x2 = Mixed([model_size, model_size], 'average', 'lstsq', ['mul', 'add'],
+                                        find_split_lambdas=True)
+            processing_model_x3 = Mixed([model_size, model_size, model_size], 'average', 'lstsq', ['mul', 'add'],
+                                        find_split_lambdas=True)
+            # """
 
-            # next_x1 = bulk_predict(current_x1, prediction_length)
-            # next_x2 = bulk_predict(current_x2, prediction_length)
-            # next_x3 = bulk_predict(current_x3, prediction_length)
+            processing_model_x1 = Multiplicative([model_size, model_size, model_size, model_size], 'average', 'lstsq',
+                                                 find_split_lambdas=True)
+            processing_model_x2 = Multiplicative([model_size, model_size], 'average', 'lstsq', find_split_lambdas=True)
+            processing_model_x3 = Multiplicative([model_size, model_size, model_size], 'average', 'lstsq',
+                                                 find_split_lambdas=True)
 
+            """
+            next_x1 = bulk_predict(current_x1, prediction_length)
+            next_x2 = bulk_predict(current_x2, prediction_length)
+            next_x3 = bulk_predict(current_x3, prediction_length)
+            # """
+
+            # """
             next_x1 = [self._risks_data['x1'][end:super_end], self._risks_data['x2'][end:super_end],
                        self._risks_data['x3'][end:super_end], self._risks_data['x4'][end:super_end]]
 
@@ -535,56 +555,60 @@ class Application:
 
             next_x3 = [self._risks_data['x2'][end:super_end], self._risks_data['x3'][end:super_end],
                        self._risks_data['x4'][end:super_end]]
+            # """
 
             res_x1 = processing_model_x1.fit(transform_independent_x_matrix(current_x1), [current_y1])
             res_x2 = processing_model_x2.fit(transform_independent_x_matrix(current_x2), [current_y2])
             res_x3 = processing_model_x3.fit(transform_independent_x_matrix(current_x3), [current_y3])
 
             # """
-            next_y1 = res_x1.predict(transform_independent_x_matrix(next_x1), normalize=True).flatten().tolist()
-            next_y2 = res_x2.predict(transform_independent_x_matrix(next_x2), normalize=True).flatten().tolist()
-            next_y3 = res_x3.predict(transform_independent_x_matrix(next_x3), normalize=True).flatten().tolist()
-
-            y1 = y1 + next_y1
-            y2 = y2 + next_y2
-            y3 = y3 + next_y3
+            next_y1 = res_x1.predict(transform_independent_x_matrix(next_x1)).flatten().tolist()
+            next_y2 = res_x2.predict(transform_independent_x_matrix(next_x2)).flatten().tolist()
+            next_y3 = res_x3.predict(transform_independent_x_matrix(next_x3)).flatten().tolist()
             # """
 
             """
             next_y1 = self._risks_data['y1'][end:super_end]
             next_y2 = self._risks_data['y2'][end:super_end]
             next_y3 = self._risks_data['y3'][end:super_end]
+            # """
 
-            y1 = y1+next_y1
-            y2 = y2+next_y2
-            y3 = y3+next_y3
-            """
+            y1 = y1 + next_y1
+            for i in range(len(next_y2)):
+                if next_y2[i] > 100:
+                    next_y2[i] = y2[-1]
+                elif next_y2[i]==0:
+                    next_y1[i] = y1[-1]
+                    next_y2[i] = y2[-1]
+                    next_y3[i] = y3[-1]
+            y2 = y2 + next_y2
+            y3 = y3 + next_y3
 
             self.draw_plot1(y1)
             self.draw_plot2(y2)
             self.draw_plot3(y3)
 
-            for i in range(prediction_length):
-                tmp_list = [int(next_time[i]), next_y1[i], next_y2[i], next_y3[i]]
+            for j in range(prediction_length):
+                tmp_list = [int(next_time[j]), next_y1[j], next_y2[j], next_y3[j]]
 
-                if next_y1[i] > self.y1_abnormal and next_y2[i] > self.y2_abnormal and next_y3[i] > self.y3_abnormal:
+                if next_y1[j] > self.y1_abnormal and next_y2[j] > self.y2_abnormal and next_y3[j] > self.y3_abnormal:
                     tmp_list.append('система функционирует нормально')
                     state = 'ok'
                     total_risk = 0
                     danger_level = 0
-                elif next_y1[i] > self.y1_crash and next_y2[i] > self.y2_crash and next_y3[i] > self.y2_crash:
-                    f1 = next_y1[i] <= self.y1_abnormal
-                    f2 = next_y2[i] <= self.y2_abnormal
-                    f3 = next_y3[i] <= self.y3_abnormal
+                elif next_y1[j] > self.y1_crash and next_y2[j] > self.y2_crash and next_y3[j] > self.y2_crash:
+                    f1 = next_y1[j] <= self.y1_abnormal
+                    f2 = next_y2[j] <= self.y2_abnormal
+                    f3 = next_y3[j] <= self.y3_abnormal
                     abnormal_sum = sum((f1, f2, f3))
                     tmp_list.append('система функционирует нештатно')
                     state = 'bad'
-                    risk_1 = (next_y1[i] - self.y1_abnormal) / risk_div1
-                    risk_2 = (next_y2[i] - self.y2_abnormal) / risk_div2
-                    risk_3 = (next_y3[i] - self.y3_abnormal) / risk_div3
+                    risk_1 = calculate_risk(next_y1[j], self.y1_abnormal, self.y1_crash)
+                    risk_2 = calculate_risk(next_y2[j], self.y2_abnormal, self.y2_crash)
+                    risk_3 = calculate_risk(next_y3[j], self.y3_abnormal, self.y3_crash)
                     total_risk = 1 - (1 - risk_1) * (1 - risk_2) * (1 - risk_3)
-                    if total_risk>0.2:
-                        danger_level = 2+total_risk*5
+                    if total_risk > 0.2:
+                        danger_level = round(2 + total_risk * 5)
                     else:
                         if abnormal_sum is 1:
                             danger_level = 1
@@ -606,11 +630,7 @@ class Application:
 
                 output_data.append(tmp_list)
 
-            wb = Workbook()
-            ws = wb.active
-            for i in output_data:
-                ws.append(i)
-            wb.save('output.xlsx')
+            self.__risks_write_to_file__(output_data)
 
     def draw_plot1(self, x):
         n = len(x)
@@ -740,6 +760,13 @@ class Application:
 
     def __write_to_file__(self, data):
         open(self._result_file_name, 'w').write(data)
+
+    def __risks_write_to_file__(self, data):
+        wb = Workbook()
+        ws = wb.active
+        for j in data:
+            ws.append(j)
+        wb.save(self._risks_result_file_name)
 
     def _switch_to_risks(self):
         self._main_window.withdraw()
