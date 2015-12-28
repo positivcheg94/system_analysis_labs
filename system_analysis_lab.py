@@ -590,46 +590,73 @@ class Application:
 
             for j in range(prediction_length):
                 tmp_list = [int(next_time[j]), next_y1[j], next_y2[j], next_y3[j]]
+                emergencies = []
+                emergency_iteration = 0
+                total_risk = 0
 
                 if next_y1[j] > self.y1_abnormal and next_y2[j] > self.y2_abnormal and next_y3[j] > self.y3_abnormal:
                     tmp_list.append('система функционирует нормально')
                     state = 'ok'
                     total_risk = 0
+                    total_risk_prev = 0
                     danger_level = 0
+                    risk_resource = None
+                    emergency_iteration = 0
+                    total_risk_change = 0
+                    avg_total_risk_change = 0
+
                 elif next_y1[j] > self.y1_crash and next_y2[j] > self.y2_crash and next_y3[j] > self.y2_crash:
                     emergencies = [next_y1[j] <= self.y1_abnormal,
-                     next_y2[j] <= self.y2_abnormal,
-                     next_y3[j] <= self.y3_abnormal]
+                                   next_y2[j] <= self.y2_abnormal,
+                                   next_y3[j] <= self.y3_abnormal]
                     abnormal_count = emergencies.count(True)
                     tmp_list.append('система функционирует нештатно')
                     state = 'bad'
+
+                    emergency_iteration += 1
+
                     risk_1 = calculate_risk(next_y1[j], self.y1_abnormal, self.y1_crash)
                     risk_2 = calculate_risk(next_y2[j], self.y2_abnormal, self.y2_crash)
                     risk_3 = calculate_risk(next_y3[j], self.y3_abnormal, self.y3_crash)
+                    total_risk_prev = total_risk
                     total_risk = 1 - (1 - risk_1) * (1 - risk_2) * (1 - risk_3)
+                    total_risk_change = total_risk - total_risk_prev
+                    avg_total_risk_change = ((emergency_iteration - 1) * avg_total_risk_change + total_risk_change) / emergency_iteration
+ 
                     if total_risk > 0.2:
                         danger_level = round(2 + total_risk * 5)
                     else:
-                        if abnormal_count = 1:
+                        if abnormal_count == 1:
                             danger_level = 1
                         else:
                             danger_level = 2
+                    
+                    risk_resource = np.floor((1-total_risk)/avg_total_risk_change)
 
                 else:
                     tmp_list.append('система функционирует аварийно')
                     state = 'so bad'
                     total_risk = 1
                     danger_level = 7
+                    risk_resource = 0
+                    emergency_iteration = 0
+                    avg_total_risk_change = 0
+                    total_risk_change = 0
+                    avg_total_risk_change = 0
 
                 tmp_list.append(total_risk)
 
                 reasons = ['Низкое напряжение в сети', 'Низкий уровень топлива', 'Низкое напряжение аккумулятора']
 
                 if state != 'ok':
-                    tmp_list.append("\n".join([reasons[index] for index in range(0, len(reasons)) if emergencies[index]]))
+                    tmp_list.append("\n".join([reasons[index]
+                                               for index in range(0, len(reasons))
+                                               if emergencies[index]]))
                 else:
                     tmp_list.append(' - ')
                 tmp_list.append(danger_level)
+
+                tmp_list.append(risk_resource)
 
                 output_data.append(tmp_list)
 
