@@ -597,10 +597,10 @@ class Application:
                     total_risk = 0
                     danger_level = 0
                 elif next_y1[j] > self.y1_crash and next_y2[j] > self.y2_crash and next_y3[j] > self.y2_crash:
-                    f1 = next_y1[j] <= self.y1_abnormal
-                    f2 = next_y2[j] <= self.y2_abnormal
-                    f3 = next_y3[j] <= self.y3_abnormal
-                    abnormal_sum = sum((f1, f2, f3))
+                    emergencies = [next_y1[j] <= self.y1_abnormal,
+                     next_y2[j] <= self.y2_abnormal,
+                     next_y3[j] <= self.y3_abnormal]
+                    abnormal_count = emergencies.count(True)
                     tmp_list.append('система функционирует нештатно')
                     state = 'bad'
                     risk_1 = calculate_risk(next_y1[j], self.y1_abnormal, self.y1_crash)
@@ -610,7 +610,7 @@ class Application:
                     if total_risk > 0.2:
                         danger_level = round(2 + total_risk * 5)
                     else:
-                        if abnormal_sum is 1:
+                        if abnormal_count = 1:
                             danger_level = 1
                         else:
                             danger_level = 2
@@ -622,8 +622,11 @@ class Application:
                     danger_level = 7
 
                 tmp_list.append(total_risk)
+
+                reasons = ['Низкое напряжение в сети', 'Низкий уровень топлива', 'Низкое напряжение аккумулятора']
+
                 if state != 'ok':
-                    tmp_list.append('insert reason here LOL')
+                    tmp_list.append("\n".join([reasons[index] for index in range(0, len(reasons)) if emergencies[index]]))
                 else:
                     tmp_list.append(' - ')
                 tmp_list.append(danger_level)
