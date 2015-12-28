@@ -588,8 +588,8 @@ class Application:
             self.draw_plot2(y2)
             self.draw_plot3(y3)
 
-            for j in range(prediction_length):
-                tmp_list = [int(next_time[j]), next_y1[j], next_y2[j], next_y3[j]]
+            for j in range(prediction_length):1
+                tmp_list = ['{:.4f}'.format(value) for value in [int(next_time[j]), next_y1[j], next_y2[j], next_y3[j]]]
                 emergencies = []
                 emergency_iteration = 0
                 total_risk = 0
@@ -644,7 +644,7 @@ class Application:
                     total_risk_change = 0
                     avg_total_risk_change = 0
 
-                tmp_list.append(total_risk)
+                tmp_list.append('{:.4%}'.format(total_risk))
 
                 reasons = ['Низкое напряжение в сети', 'Низкий уровень топлива', 'Низкое напряжение аккумулятора']
 
